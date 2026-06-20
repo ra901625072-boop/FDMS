@@ -65,12 +65,68 @@ def register(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
 @router.post("/login", response_model=schemas.Token)
 def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == credentials.email).first()
-    if not user or not user.password_hash or not auth.verify_password(credentials.password, user.password_hash):
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # 1. Admin login (user has password hash)
+    if user.password_hash is not None:
+        if not auth.verify_password(credentials.password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    # 2. Family Member login (using the family's current secret code)
+    else:
+        # Get member's family
+        membership = db.query(models.FamilyMember).filter(models.FamilyMember.user_id == user.id).first()
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No family vault associated with this account.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        family = db.query(models.Family).filter(models.Family.id == membership.family_id).first()
+        if not family:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Family vault not found.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Verify the entered secret code against the family's current active code
+        import hashlib
+        code_to_check = credentials.password.replace("-", "").upper()
+        sha256_hash = hashlib.sha256(code_to_check.encode("utf-8")).hexdigest()
+
+        # Check match
+        code_matches = False
+        if family.secret_code_sha256 == sha256_hash:
+            code_matches = True
+        elif family.secret_code_sha256 is None and auth.verify_password(code_to_check, family.secret_code_hash):
+            code_matches = True
+
+        if not code_matches:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or family secret code.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Check expiration
+        if family.expires_at:
+            expires_at_aware = family.expires_at.replace(tzinfo=timezone.utc) if family.expires_at.tzinfo is None else family.expires_at
+            if expires_at_aware < datetime.now(timezone.utc):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="The family code has expired. Ask your admin to generate a new one.",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
 
     access_token = auth.create_access_token(
         data={
@@ -168,6 +224,10 @@ def family_login(request: Request, login_in: schemas.FamilyLogin, db: Session = 
         role="member"
     )
     db.add(new_member)
+
+    # Expire code immediately for one-time use limitation
+    matched_family.expires_at = datetime.now(timezone.utc)
+
     db.commit()
     db.refresh(user)
 

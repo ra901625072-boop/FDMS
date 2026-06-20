@@ -1,5 +1,5 @@
 /**
- * Hearth Authentication & Layout Manager
+ * FamDoc Authentication & Layout Manager
  */
 document.addEventListener("DOMContentLoaded", async () => {
   // Determine page type
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                       path === "/" ||
                       path === "";
 
-  const token = localStorage.getItem("hearth_token");
+  const token = localStorage.getItem("famdoc_token");
 
   // Public shared link page doesn't require session redirects
   if (isSharedPage) {
@@ -36,12 +36,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Load user profile
   let user = null;
   try {
-    user = await HearthAPI.auth.me();
+    user = await FamDocAPI.auth.me();
   } catch (error) {
     // Session expired or invalid
-    HearthAPI.utils.showToast("Your session has expired. Please log in again.", "error");
+    FamDocAPI.utils.showToast("Your session has expired. Please log in again.", "error");
     setTimeout(() => {
-      HearthAPI.auth.logout();
+      FamDocAPI.auth.logout();
     }, 1500);
     return;
   }
@@ -56,8 +56,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } else {
       // Members must always belong to a family (registered via code)
-      HearthAPI.utils.showToast("Account error: No family associated.", "error");
-      HearthAPI.auth.logout();
+      FamDocAPI.utils.showToast("Account error: No family associated.", "error");
+      FamDocAPI.auth.logout();
       return;
     }
   } else {
@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function injectLayout(user) {
-  const container = document.getElementById("hearth-layout-container");
+  const container = document.getElementById("famdoc-layout-container");
   if (!container) return;
 
   const currentPath = window.location.pathname;
@@ -89,8 +89,8 @@ function injectLayout(user) {
   mobileHeader.style.cssText = "display: none; width: 100%; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background-color: var(--bg-linen); border-bottom: 1px solid var(--border-paper); position: fixed; top: 0; left: 0; z-index: 999;";
   mobileHeader.innerHTML = `
     <a href="/dashboard.html" class="sidebar-logo" style="margin-bottom: 0; font-size: 1.25rem;">
-      <i class="fas fa-fire"></i>
-      <span>Hearth</span>
+      <i class="fas fa-box-archive"></i>
+      <span>FamDoc</span>
     </a>
     <button class="hamburger" id="hamburgerToggle">
       <i class="fas fa-bars"></i>
@@ -103,8 +103,8 @@ function injectLayout(user) {
   sidebar.id = "sidebarMenu";
   sidebar.innerHTML = `
     <a href="/dashboard.html" class="sidebar-logo">
-      <i class="fas fa-fire"></i>
-      <span>Hearth</span>
+      <i class="fas fa-box-archive"></i>
+      <span>FamDoc</span>
     </a>
     
     <div class="sidebar-nav">
@@ -163,7 +163,7 @@ function injectLayout(user) {
 
   // Attach logout handler
   document.getElementById("logoutBtn").addEventListener("click", () => {
-    HearthAPI.auth.logout();
+    FamDocAPI.auth.logout();
   });
 
   // Mobile menu toggle

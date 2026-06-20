@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Profile — Hearth</title>
+  <title>My Profile — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-  <div id="hearth-layout-container">
+  <div id="famdoc-layout-container">
     
     <div class="content-header">
       <div>
@@ -19,7 +19,7 @@
     </div>
 
     <!-- Alert / Toast Info -->
-    <div id="profile-alert" class="hearth-alert hearth-alert-success" style="display: none;">
+    <div id="profile-alert" class="famdoc-alert famdoc-alert-success" style="display: none;">
       <i class="fas fa-check-circle"></i>
       <div id="profile-alert-message">Profile updated successfully!</div>
     </div>
@@ -28,7 +28,7 @@
     <div class="dashboard-sections">
       
       <!-- Left Column: Profile Details Form -->
-      <div class="hearth-card">
+      <div class="famdoc-card">
         <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
           <i class="fas fa-user-cog" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Account Details
         </h2>
@@ -67,7 +67,7 @@
       </div>
 
       <!-- Right Column: Family Vault settings / Code Generator -->
-      <div class="hearth-card">
+      <div class="famdoc-card">
         <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
           <i class="fas fa-key" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Family Secret Code
         </h2>
@@ -79,7 +79,7 @@
 
         <!-- State 2: No Family -->
         <div id="family-none" style="display: none;">
-          <div class="hearth-alert hearth-alert-info" style="margin-bottom: 1.5rem;">
+          <div class="famdoc-alert famdoc-alert-info" style="margin-bottom: 1.5rem;">
             <i class="fas fa-info-circle"></i>
             <div>You are not currently linked to any family group. As an administrator, you can initialize a new family vault below.</div>
           </div>
@@ -140,7 +140,7 @@
 
     <!-- The 2-Question Family Generator Modal -->
     <div id="modal-family-code-wizard" class="modal-overlay">
-      <div class="hearth-modal" style="max-width: 450px;">
+      <div class="famdoc-modal" style="max-width: 450px;">
         <div class="modal-header">
           <h3 class="modal-title" id="wizard-title">Generate Invitation Code</h3>
           <button class="modal-close" onclick="closeWizard()"><i class="fas fa-times"></i></button>
@@ -148,7 +148,7 @@
         <form id="family-wizard-form">
           <div class="modal-body">
             
-            <div id="wizard-error" class="hearth-alert hearth-alert-warning" style="display: none; margin-bottom: 1.25rem;">
+            <div id="wizard-error" class="famdoc-alert famdoc-alert-warning" style="display: none; margin-bottom: 1.25rem;">
               <i class="fas fa-exclamation-triangle"></i>
               <div id="wizard-error-message">Error message</div>
             </div>
@@ -187,7 +187,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       // Delay slightly for auth check to finish
       setTimeout(async () => {
-        const userJson = localStorage.getItem("hearth_user");
+        const userJson = localStorage.getItem("famdoc_user");
         if (!userJson) return;
         currentUser = JSON.parse(userJson);
 
@@ -218,7 +218,7 @@
           saveBtn.disabled = true;
           saveBtn.querySelector("span").textContent = "Saving Profile...";
 
-          await HearthAPI.auth.updateProfile(username, password || null);
+          await FamDocAPI.auth.updateProfile(username, password || null);
           showProfileAlert("Profile details updated successfully!", "success");
 
           // Clear password fields
@@ -290,11 +290,11 @@
 
           let result;
           if (isRegenerating) {
-            result = await HearthAPI.family.regenerateCode(name, maxMembers);
-            HearthAPI.utils.showToast("Family invitation code regenerated successfully!", "success");
+            result = await FamDocAPI.family.regenerateCode(name, maxMembers);
+            FamDocAPI.utils.showToast("Family invitation code regenerated successfully!", "success");
           } else {
-            result = await HearthAPI.family.setup(name, maxMembers);
-            HearthAPI.utils.showToast("Family vault initialized and code generated!", "success");
+            result = await FamDocAPI.family.setup(name, maxMembers);
+            FamDocAPI.utils.showToast("Family vault initialized and code generated!", "success");
           }
 
           // Close modal
@@ -316,7 +316,7 @@
             copySpan.textContent = "Copied!";
             copyIcon.className = "fas fa-check";
             
-            HearthAPI.utils.showToast("Invitation code copied to clipboard!", "success");
+            FamDocAPI.utils.showToast("Invitation code copied to clipboard!", "success");
             
             setTimeout(() => {
               copySpan.textContent = "Copy";
@@ -354,7 +354,7 @@
       }
 
       try {
-        const familyDetails = await HearthAPI.family.getDetails();
+        const familyDetails = await FamDocAPI.family.getDetails();
         loadingDiv.style.display = "none";
 
         if (currentUser.role === "admin") {
@@ -396,7 +396,7 @@
       const msgDiv = document.getElementById("profile-alert-message");
       
       msgDiv.textContent = msg;
-      alertDiv.className = `hearth-alert hearth-alert-${type === 'error' ? 'warning' : 'success'}`;
+      alertDiv.className = `famdoc-alert famdoc-alert-${type === 'error' ? 'warning' : 'success'}`;
       
       const icon = alertDiv.querySelector("i");
       if (type === 'error') {

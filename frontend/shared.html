@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Shared Family Record — Hearth</title>
+  <title>Shared Family Record — FamDoc</title>
   <!-- SEO meta -->
   <meta name="description" content="View and download a shared family document vault record securely.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,13 +12,13 @@
 <body>
   
   <div class="guest-wrapper">
-    <div class="hearth-card shared-layout">
+    <div class="famdoc-card shared-layout">
       
       <!-- Logo header -->
       <div style="text-align: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border-paper); padding-bottom: 1rem;">
         <div class="auth-logo" style="margin-bottom: 0;">
-          <i class="fas fa-fire"></i>
-          <span>Hearth</span>
+          <i class="fas fa-box-archive"></i>
+          <span>FamDoc</span>
         </div>
         <p style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-ink-muted); margin-top: 0.25rem;">Family Keepsake Vault</p>
       </div>
@@ -32,9 +32,9 @@
       <!-- Error State -->
       <div id="shared-error" style="display: none; text-align: center; padding: 2rem 0;">
         <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--warning-red); margin-bottom: 1.25rem;"></i>
-        <h3 class="hearth-card-title" style="margin-bottom: 0.5rem;">Shared Link Invalid</h3>
+        <h3 class="famdoc-card-title" style="margin-bottom: 0.5rem;">Shared Link Invalid</h3>
         <p id="error-desc" style="color: var(--text-ink-muted); margin-bottom: 1.5rem;">This link has expired, reached its maximum download limit, or is incorrect.</p>
-        <a href="/index.html" class="btn btn-secondary">Go to Hearth Homepage</a>
+        <a href="/index.html" class="btn btn-secondary">Go to FamDoc Homepage</a>
       </div>
 
       <!-- Active Content State -->
@@ -95,21 +95,21 @@
       const content = document.getElementById("shared-content");
       
       try {
-        const info = await HearthAPI.sharing.getPublicInfo(linkToken);
+        const info = await FamDocAPI.sharing.getPublicInfo(linkToken);
         
         loading.style.display = "none";
         content.style.display = "block";
 
         // Set metadata
         document.getElementById("file-name").textContent = info.filename;
-        document.getElementById("file-size").textContent = HearthAPI.utils.formatBytes(info.size_bytes);
+        document.getElementById("file-size").textContent = FamDocAPI.utils.formatBytes(info.size_bytes);
         
-        const iconClass = HearthAPI.utils.getFileIconClass(info.file_type, info.filename);
+        const iconClass = FamDocAPI.utils.getFileIconClass(info.file_type, info.filename);
         document.getElementById("file-icon").className = `shared-file-icon ${iconClass}`;
 
         // Expiration check
         if (info.expires_at) {
-          const formatted = HearthAPI.utils.formatDate(info.expires_at);
+          const formatted = FamDocAPI.utils.formatDate(info.expires_at);
           document.getElementById("expiry-date").textContent = formatted;
           document.getElementById("expiry-notice").style.display = "block";
         }
@@ -137,7 +137,7 @@
       if (isPasswordProtected) {
         password = passwordInput.value.trim();
         if (!password) {
-          HearthAPI.utils.showToast("Password is required to unlock this file.", "error");
+          FamDocAPI.utils.showToast("Password is required to unlock this file.", "error");
           passwordInput.focus();
           return;
         }
@@ -147,11 +147,11 @@
         downloadBtn.disabled = true;
         downloadBtn.querySelector("span").textContent = "Downloading File...";
 
-        await HearthAPI.sharing.downloadPublic(linkToken, password);
+        await FamDocAPI.sharing.downloadPublic(linkToken, password);
         
-        HearthAPI.utils.showToast("File downloaded successfully!", "success");
+        FamDocAPI.utils.showToast("File downloaded successfully!", "success");
       } catch (err) {
-        HearthAPI.utils.showToast(err.message || "Failed to download. Check the password.", "error");
+        FamDocAPI.utils.showToast(err.message || "Failed to download. Check the password.", "error");
       } finally {
         downloadBtn.disabled = false;
         downloadBtn.querySelector("span").textContent = originalText;

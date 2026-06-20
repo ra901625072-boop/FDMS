@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Set Up Family Vault — Hearth</title>
+  <title>Set Up Family Vault — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
@@ -18,11 +18,11 @@
     <div class="setup-wrapper">
       
       <!-- Phase 1: Form Card -->
-      <div id="setup-form-card" class="hearth-card">
+      <div id="setup-form-card" class="famdoc-card">
         <h2 style="font-family: var(--font-serif); font-size: 2rem; margin-bottom: 0.5rem; text-align: center;">Set Up Your Family Vault</h2>
         <p style="color: var(--text-ink-muted); text-align: center; margin-bottom: 2rem;">Name your vault and specify the maximum number of family members you want to allow.</p>
 
-        <div id="error-alert" class="hearth-alert hearth-alert-warning" style="display: none;">
+        <div id="error-alert" class="famdoc-alert famdoc-alert-warning" style="display: none;">
           <i class="fas fa-exclamation-triangle" style="margin-top: 2px;"></i>
           <div id="error-message">Error details go here.</div>
         </div>
@@ -48,14 +48,14 @@
       </div>
 
       <!-- Phase 2: Reveal Ticket Card -->
-      <div id="reveal-card" class="hearth-card" style="display: none;">
+      <div id="reveal-card" class="famdoc-card" style="display: none;">
         <div style="text-align: center; margin-bottom: 1.5rem;">
           <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success-sage); margin-bottom: 1rem;"></i>
           <h2 style="font-family: var(--font-serif); font-size: 2rem;">Vault Successfully Created!</h2>
           <p style="color: var(--text-ink-muted); margin-top: 0.25rem;">Your family keepsakes now have a virtual home.</p>
         </div>
 
-        <div class="hearth-alert hearth-alert-info">
+        <div class="famdoc-alert famdoc-alert-info">
           <i class="fas fa-info-circle" style="margin-top: 2px;"></i>
           <div>
             <strong>Save this invitation code.</strong> Send this code to other family members so they can register and join your vault. For security, this plain-text code cannot be recovered once you navigate away!
@@ -92,20 +92,20 @@
   <script>
     // Security check: Must have a token, but must NOT have a family yet
     document.addEventListener("DOMContentLoaded", async () => {
-      const token = localStorage.getItem("hearth_token");
+      const token = localStorage.getItem("famdoc_token");
       if (!token) {
         window.location.href = "/index.html";
         return;
       }
       
       try {
-        const user = await HearthAPI.auth.me();
+        const user = await FamDocAPI.auth.me();
         if (user.family_id) {
           // Already has family, redirect to dashboard
           window.location.href = "/dashboard.html";
         }
       } catch (err) {
-        HearthAPI.auth.logout();
+        FamDocAPI.auth.logout();
       }
     });
 
@@ -138,7 +138,7 @@
         submitBtn.disabled = true;
         submitBtn.querySelector("span").textContent = "Creating Vault...";
 
-        const result = await HearthAPI.family.setup(name, maxMembers);
+        const result = await FamDocAPI.family.setup(name, maxMembers);
 
         // Show phase 2 reveal card
         document.getElementById("setup-form-card").style.display = "none";
@@ -154,7 +154,7 @@
           copySpan.textContent = "Copied!";
           copyIcon.className = "fas fa-check";
           
-          HearthAPI.utils.showToast("Secret code copied to clipboard!", "success");
+          FamDocAPI.utils.showToast("Secret code copied to clipboard!", "success");
           
           setTimeout(() => {
             copySpan.textContent = "Copy";

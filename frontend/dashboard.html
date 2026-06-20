@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — Hearth</title>
+  <title>Dashboard — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   
-  <div id="hearth-layout-container">
+  <div id="famdoc-layout-container">
     <!-- This container is dynamically populated by auth.js with sidebar and layout shell -->
     
     <div class="content-header">
@@ -22,17 +22,17 @@
 
     <!-- Dashboard Statistics Grid -->
     <div class="dashboard-grid">
-      <div class="hearth-card stat-card">
+      <div class="famdoc-card stat-card">
         <i class="fas fa-file-alt stat-icon"></i>
         <div class="stat-label">Total Files</div>
         <div class="stat-val" id="stat-files">0</div>
       </div>
-      <div class="hearth-card stat-card">
+      <div class="famdoc-card stat-card">
         <i class="fas fa-database stat-icon"></i>
         <div class="stat-label">Space Occupied</div>
         <div class="stat-val" id="stat-size">0 Bytes</div>
       </div>
-      <div class="hearth-card stat-card">
+      <div class="famdoc-card stat-card">
         <i class="fas fa-users stat-icon"></i>
         <div class="stat-label">Family Members</div>
         <div class="stat-val" id="stat-members">0</div>
@@ -42,9 +42,9 @@
     <!-- Double Sections -->
     <div class="dashboard-sections">
       <!-- Recent Uploads Card -->
-      <div class="hearth-card">
-        <div class="hearth-card-header">
-          <h2 class="hearth-card-title"><i class="fas fa-clock" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Recent Vault Uploads</h2>
+      <div class="famdoc-card">
+        <div class="famdoc-card-header">
+          <h2 class="famdoc-card-title"><i class="fas fa-clock" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Recent Vault Uploads</h2>
           <a href="/files.html" style="font-size: 0.85rem; font-weight: 600;">Browse All <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></a>
         </div>
         
@@ -59,9 +59,9 @@
       </div>
 
       <!-- Activity Feed Card -->
-      <div class="hearth-card">
-        <div class="hearth-card-header">
-          <h2 class="hearth-card-title"><i class="fas fa-history" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Vault Activity</h2>
+      <div class="famdoc-card">
+        <div class="famdoc-card-header">
+          <h2 class="famdoc-card-title"><i class="fas fa-history" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Vault Activity</h2>
         </div>
         
         <div id="activity-feed-list" class="activity-feed">
@@ -83,7 +83,7 @@
     document.addEventListener("DOMContentLoaded", async () => {
       // Wait slightly to ensure auth token check is processed in auth.js
       setTimeout(async () => {
-        const userJson = localStorage.getItem("hearth_user");
+        const userJson = localStorage.getItem("famdoc_user");
         if (!userJson) return;
         const user = JSON.parse(userJson);
 
@@ -98,11 +98,11 @@
 
         try {
           // Fetch statistics
-          const stats = await HearthAPI.dashboard.getStats();
+          const stats = await FamDocAPI.dashboard.getStats();
           
           // Set stats numbers
           document.getElementById("stat-files").textContent = stats.total_files;
-          document.getElementById("stat-size").textContent = HearthAPI.utils.formatBytes(stats.total_size_bytes);
+          document.getElementById("stat-size").textContent = FamDocAPI.utils.formatBytes(stats.total_size_bytes);
           document.getElementById("stat-members").textContent = stats.total_members;
 
           // Populate Recent Uploads
@@ -120,9 +120,9 @@
                 window.location.href = `/files.html?preview=${file.id}`;
               });
               
-              const iconClass = HearthAPI.utils.getFileIconClass(file.file_type, file.filename);
-              const formattedSize = HearthAPI.utils.formatBytes(file.size_bytes);
-              const formattedDate = HearthAPI.utils.formatDate(file.upload_date);
+              const iconClass = FamDocAPI.utils.getFileIconClass(file.file_type, file.filename);
+              const formattedSize = FamDocAPI.utils.formatBytes(file.size_bytes);
+              const formattedDate = FamDocAPI.utils.formatDate(file.upload_date);
 
               fileCard.innerHTML = `
                 <i class="item-icon ${iconClass}"></i>
@@ -160,7 +160,7 @@
                 </div>
                 <div class="activity-details">
                   <div><strong>${log.username || 'Someone'}</strong> ${cleanActionDetails(log.action, log.details)}</div>
-                  <div class="activity-time">${HearthAPI.utils.formatDate(log.timestamp)}</div>
+                  <div class="activity-time">${FamDocAPI.utils.formatDate(log.timestamp)}</div>
                 </div>
               `;
               activityFeed.appendChild(activityItem);
@@ -169,7 +169,7 @@
 
         } catch (err) {
           console.error("Dashboard failed to load data:", err);
-          HearthAPI.utils.showToast("Failed to retrieve dashboard statistics.", "error");
+          FamDocAPI.utils.showToast("Failed to retrieve dashboard statistics.", "error");
         }
       }, 50);
     });

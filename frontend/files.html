@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Shared Vault — Hearth</title>
+  <title>Shared Vault — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
@@ -17,7 +17,7 @@
 </head>
 <body>
 
-  <div id="hearth-layout-container">
+  <div id="famdoc-layout-container">
     
     <div class="content-header">
       <div>
@@ -42,7 +42,7 @@
 
     <!-- Upload Progress Modal / Overlay -->
     <div id="upload-progress-overlay" class="modal-overlay">
-      <div class="hearth-card" style="max-width: 400px; width: 100%; padding: 1.5rem;">
+      <div class="famdoc-card" style="max-width: 400px; width: 100%; padding: 1.5rem;">
         <h3 style="font-family: var(--font-serif); margin-bottom: 0.75rem;"><i class="fas fa-spinner fa-spin" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Uploading...</h3>
         <p id="upload-file-name" style="font-size: 0.9rem; color: var(--text-ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1rem;">filename.txt</p>
         <div style="background-color: var(--border-paper); height: 10px; border-radius: 5px; overflow: hidden;">
@@ -116,7 +116,7 @@
 
     <!-- Create Folder Modal -->
     <div id="modal-create-folder" class="modal-overlay">
-      <div class="hearth-modal">
+      <div class="famdoc-modal">
         <div class="modal-header">
           <h3 class="modal-title">Create New Folder</h3>
           <button class="modal-close"><i class="fas fa-times"></i></button>
@@ -138,7 +138,7 @@
 
     <!-- Rename Modal -->
     <div id="modal-rename" class="modal-overlay">
-      <div class="hearth-modal">
+      <div class="famdoc-modal">
         <div class="modal-header">
           <h3 class="modal-title">Rename Item</h3>
           <button class="modal-close"><i class="fas fa-times"></i></button>
@@ -162,7 +162,7 @@
 
     <!-- Share Link Creator Modal -->
     <div id="modal-share" class="modal-overlay">
-      <div class="hearth-modal" style="max-width: 550px;">
+      <div class="famdoc-modal" style="max-width: 550px;">
         <div class="modal-header">
           <h3 class="modal-title">Share Vault Item</h3>
           <button class="modal-close"><i class="fas fa-times"></i></button>
@@ -211,7 +211,7 @@
 
     <!-- Inline Media Preview Overlay Modal -->
     <div id="modal-preview" class="modal-overlay">
-      <div class="hearth-modal preview-modal">
+      <div class="famdoc-modal preview-modal">
         <div class="modal-header">
           <h3 class="modal-title" id="preview-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">Preview</h3>
           <div style="display: flex; gap: 0.5rem; align-items: center;">
@@ -244,8 +244,8 @@
     // Securely download a file using token authentication header
     async function downloadFileAuthenticated(fileId, filename) {
       try {
-        const token = localStorage.getItem("hearth_token");
-        const response = await fetch(HearthAPI.files.getDownloadUrl(fileId), {
+        const token = localStorage.getItem("famdoc_token");
+        const response = await fetch(FamDocAPI.files.getDownloadUrl(fileId), {
           headers: token ? { "Authorization": `Bearer ${token}` } : {}
         });
 
@@ -263,7 +263,7 @@
         a.remove();
         window.URL.revokeObjectURL(url);
       } catch (err) {
-        HearthAPI.utils.showToast(err.message, "error");
+        FamDocAPI.utils.showToast(err.message, "error");
       }
     }
 
@@ -279,11 +279,11 @@
       
       // Delay slightly for auth check in auth.js
       setTimeout(async () => {
-        const user = JSON.parse(localStorage.getItem("hearth_user"));
+        const user = JSON.parse(localStorage.getItem("famdoc_user"));
         if (!user) return;
         
         // Initialize view
-        const savedView = localStorage.getItem("hearth_view");
+        const savedView = localStorage.getItem("famdoc_view");
         if (savedView) {
           setView(savedView);
         }
@@ -305,16 +305,16 @@
     async function refreshData() {
       try {
         // Fetch folders
-        allFolders = await HearthAPI.folders.getFolders();
+        allFolders = await FamDocAPI.folders.getFolders();
         
         // Fetch files for current directory
-        currentFiles = await HearthAPI.files.getFiles(currentFolderId);
+        currentFiles = await FamDocAPI.files.getFiles(currentFolderId);
         
         renderBreadcrumbs();
         renderExplorer();
       } catch (err) {
         console.error("Failed to load vault items:", err);
-        HearthAPI.utils.showToast("Failed to load vault files.", "error");
+        FamDocAPI.utils.showToast("Failed to load vault files.", "error");
       }
     }
 
@@ -407,7 +407,7 @@
       wrapper.style.display = currentView === "grid" ? "grid" : "flex";
       emptyState.style.display = "none";
 
-      const currentUser = JSON.parse(localStorage.getItem("hearth_user"));
+      const currentUser = JSON.parse(localStorage.getItem("famdoc_user"));
 
       // 1. Render Subfolders
       subFolders.forEach(folder => {
@@ -429,7 +429,7 @@
             <div class="item-details">
               <div class="item-name" title="${folder.name}">${folder.name}</div>
               <div class="item-meta-size">${folder.file_count} files</div>
-              <div class="item-meta-date">${HearthAPI.utils.formatDate(folder.last_modified).split(',')[0]}</div>
+              <div class="item-meta-date">${FamDocAPI.utils.formatDate(folder.last_modified).split(',')[0]}</div>
               <div class="item-meta-uploader">—</div>
             </div>
           `
@@ -470,9 +470,9 @@
           openPreview(file.id);
         });
 
-        const iconClass = HearthAPI.utils.getFileIconClass(file.file_type, file.filename);
-        const formattedSize = HearthAPI.utils.formatBytes(file.size_bytes);
-        const formattedDate = HearthAPI.utils.formatDate(file.upload_date);
+        const iconClass = FamDocAPI.utils.getFileIconClass(file.file_type, file.filename);
+        const formattedSize = FamDocAPI.utils.formatBytes(file.size_bytes);
+        const formattedDate = FamDocAPI.utils.formatDate(file.upload_date);
 
         // Member role check: members can only rename/delete their own files. Admins can do anything.
         const canManage = currentUser.role === "admin" || file.uploader_id === currentUser.id;
@@ -528,7 +528,7 @@
     // Toggle grid/list display
     function setView(view) {
       currentView = view;
-      localStorage.setItem("hearth_view", view);
+      localStorage.setItem("famdoc_view", view);
 
       const gridBtn = document.getElementById("toggle-grid");
       const listBtn = document.getElementById("toggle-list");
@@ -576,11 +576,11 @@
     async function deleteFolder(id, name) {
       if (confirm(`Are you sure you want to delete folder "${name}"? This soft-deletes the folder and all its contents recursively.`)) {
         try {
-          await HearthAPI.folders.delete(id);
-          HearthAPI.utils.showToast("Folder deleted successfully.", "success");
+          await FamDocAPI.folders.delete(id);
+          FamDocAPI.utils.showToast("Folder deleted successfully.", "success");
           refreshData();
         } catch (err) {
-          HearthAPI.utils.showToast(err.message, "error");
+          FamDocAPI.utils.showToast(err.message, "error");
         }
       }
     }
@@ -589,11 +589,11 @@
     async function deleteFile(id, name) {
       if (confirm(`Are you sure you want to move "${name}" to the recycle bin?`)) {
         try {
-          await HearthAPI.files.delete(id);
-          HearthAPI.utils.showToast("File moved to recycle bin.", "success");
+          await FamDocAPI.files.delete(id);
+          FamDocAPI.utils.showToast("File moved to recycle bin.", "success");
           refreshData();
         } catch (err) {
-          HearthAPI.utils.showToast(err.message, "error");
+          FamDocAPI.utils.showToast(err.message, "error");
         }
       }
     }
@@ -625,7 +625,7 @@
       container.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-ink-muted);">Loading links...</p>`;
 
       try {
-        const links = await HearthAPI.sharing.getLinks(fileId);
+        const links = await FamDocAPI.sharing.getLinks(fileId);
         if (links.length === 0) {
           container.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-ink-muted);">No active public links for this file.</p>`;
           return;
@@ -645,7 +645,7 @@
 
           const metaItems = [];
           if (link.is_password_protected) metaItems.push('<i class="fas fa-lock" title="Password protected"></i>');
-          if (link.expires_at) metaItems.push(`Expires: ${HearthAPI.utils.formatDate(link.expires_at).split(',')[0]}`);
+          if (link.expires_at) metaItems.push(`Expires: ${FamDocAPI.utils.formatDate(link.expires_at).split(',')[0]}`);
           if (link.max_downloads) metaItems.push(`Dl: ${link.download_count}/${link.max_downloads}`);
           else metaItems.push(`Dl: ${link.download_count}`);
 
@@ -657,7 +657,7 @@
               <div>${metaText}</div>
             </div>
             <div style="display: flex; gap: 0.25rem;">
-              <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${link.share_link}'); HearthAPI.utils.showToast('Copied to clipboard', 'success');" style="padding: 0.35rem 0.5rem; font-size: 0.75rem;">
+              <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${link.share_link}'); FamDocAPI.utils.showToast('Copied to clipboard', 'success');" style="padding: 0.35rem 0.5rem; font-size: 0.75rem;">
                 <i class="far fa-copy"></i>
               </button>
               <button class="btn btn-danger" onclick="revokeShareLink('${link.token}', ${fileId})" style="padding: 0.35rem 0.5rem; font-size: 0.75rem;">
@@ -675,12 +675,12 @@
     async function revokeShareLink(token, fileId) {
       if (confirm("Revoke this link? Anyone using it will immediately lose access to download this file.")) {
         try {
-          await HearthAPI.sharing.revokeLink(token);
-          HearthAPI.utils.showToast("Link revoked successfully.", "success");
+          await FamDocAPI.sharing.revokeLink(token);
+          FamDocAPI.utils.showToast("Link revoked successfully.", "success");
           await refreshShareLinks(fileId);
           refreshData(); // To update the file list share icon
         } catch (err) {
-          HearthAPI.utils.showToast(err.message, "error");
+          FamDocAPI.utils.showToast(err.message, "error");
         }
       }
     }
@@ -690,7 +690,7 @@
       let file = currentFiles.find(f => f.id === fileId);
       if (!file) {
         try {
-          const allActiveFiles = await HearthAPI.search.search({});
+          const allActiveFiles = await FamDocAPI.search.search({});
           file = allActiveFiles.find(f => f.id === fileId);
           if (file) {
             const targetFolderId = file.folder_id === null ? "root" : file.folder_id;
@@ -700,7 +700,7 @@
             window.history.pushState({ path: newUrl }, "", newUrl);
             await refreshData();
           } else {
-            HearthAPI.utils.showToast("File not found or access denied.", "error");
+            FamDocAPI.utils.showToast("File not found or access denied.", "error");
             return;
           }
         } catch (err) {
@@ -727,13 +727,13 @@
         activePreviewUrl = null;
       }
 
-      const previewUrl = HearthAPI.files.getPreviewUrl(fileId);
+      const previewUrl = FamDocAPI.files.getPreviewUrl(fileId);
       const mime = file.file_type.toLowerCase();
       const ext = file.filename.split(".").pop().toLowerCase();
 
       try {
         if (mime.includes("image") || ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) {
-          const token = localStorage.getItem("hearth_token");
+          const token = localStorage.getItem("famdoc_token");
           const res = await fetch(previewUrl, {
             headers: token ? { "Authorization": `Bearer ${token}` } : {}
           });
@@ -742,7 +742,7 @@
           activePreviewUrl = URL.createObjectURL(blob);
           contentArea.innerHTML = `<img src="${activePreviewUrl}" class="preview-image" alt="${file.filename}">`;
         } else if (mime.includes("pdf") || ext === "pdf") {
-          const token = localStorage.getItem("hearth_token");
+          const token = localStorage.getItem("famdoc_token");
           const res = await fetch(previewUrl, {
             headers: token ? { "Authorization": `Bearer ${token}` } : {}
           });
@@ -751,7 +751,7 @@
           activePreviewUrl = URL.createObjectURL(blob);
           contentArea.innerHTML = `<iframe src="${activePreviewUrl}" class="preview-frame"></iframe>`;
         } else if (mime.includes("text") || ["txt", "log", "json", "md", "csv"].includes(ext)) {
-          const token = localStorage.getItem("hearth_token");
+          const token = localStorage.getItem("famdoc_token");
           const res = await fetch(previewUrl, {
             headers: token ? { "Authorization": `Bearer ${token}` } : {}
           });
@@ -767,7 +767,7 @@
             <div class="empty-state">
               <i class="fas fa-file-signature empty-state-icon" style="font-size: 3rem;"></i>
               <h4 class="empty-state-title">No Preview Available</h4>
-              <p class="empty-state-text" style="margin-bottom: 1rem;">Hearth doesn't support inline previews for this file type (${ext.toUpperCase()}).</p>
+              <p class="empty-state-text" style="margin-bottom: 1rem;">FamDoc doesn't support inline previews for this file type (${ext.toUpperCase()}).</p>
               <button id="preview-fallback-download" class="btn btn-primary">
                 <i class="fas fa-download"></i> Download File
               </button>
@@ -865,12 +865,12 @@
 
         try {
           const parentId = currentFolderId === "root" ? null : currentFolderId;
-          await HearthAPI.folders.create(name, parentId);
+          await FamDocAPI.folders.create(name, parentId);
           closeModal("modal-create-folder");
-          HearthAPI.utils.showToast(`Folder "${name}" created successfully.`, "success");
+          FamDocAPI.utils.showToast(`Folder "${name}" created successfully.`, "success");
           refreshData();
         } catch (err) {
-          HearthAPI.utils.showToast(err.message, "error");
+          FamDocAPI.utils.showToast(err.message, "error");
         }
       });
 
@@ -884,15 +884,15 @@
 
         try {
           if (type === "folder") {
-            await HearthAPI.folders.rename(id, name);
+            await FamDocAPI.folders.rename(id, name);
           } else {
-            await HearthAPI.files.rename(id, name);
+            await FamDocAPI.files.rename(id, name);
           }
           closeModal("modal-rename");
-          HearthAPI.utils.showToast(`Item renamed to "${name}".`, "success");
+          FamDocAPI.utils.showToast(`Item renamed to "${name}".`, "success");
           refreshData();
         } catch (err) {
-          HearthAPI.utils.showToast(err.message, "error");
+          FamDocAPI.utils.showToast(err.message, "error");
         }
       });
 
@@ -908,12 +908,12 @@
         const maxDownloads = downloadsVal ? parseInt(downloadsVal) : null;
 
         try {
-          await HearthAPI.sharing.createLink(fileId, password, expiresAt, maxDownloads);
-          HearthAPI.utils.showToast("Public shared link created!", "success");
+          await FamDocAPI.sharing.createLink(fileId, password, expiresAt, maxDownloads);
+          FamDocAPI.utils.showToast("Public shared link created!", "success");
           await refreshShareLinks(fileId);
           refreshData(); // To update link badge in list
         } catch (err) {
-          HearthAPI.utils.showToast(err.message, "error");
+          FamDocAPI.utils.showToast(err.message, "error");
         }
       });
 
@@ -951,7 +951,7 @@
             file_type: type || null,
             folder_id: folderId
           };
-          currentFiles = await HearthAPI.search.search(searchParams);
+          currentFiles = await FamDocAPI.search.search(searchParams);
           // Show search results under same current folder
           renderExplorer();
         } catch (err) {
@@ -979,13 +979,13 @@
         percentageText.textContent = "0%";
 
         try {
-          await HearthAPI.files.upload(file, currentFolderId, (percent) => {
+          await FamDocAPI.files.upload(file, currentFolderId, (percent) => {
             progressBar.style.width = `${percent}%`;
             percentageText.textContent = `${percent}%`;
           });
-          HearthAPI.utils.showToast(`"${file.name}" uploaded successfully.`, "success");
+          FamDocAPI.utils.showToast(`"${file.name}" uploaded successfully.`, "success");
         } catch (err) {
-          HearthAPI.utils.showToast(`Upload failed for "${file.name}": ${err.message}`, "error");
+          FamDocAPI.utils.showToast(`Upload failed for "${file.name}": ${err.message}`, "error");
         }
       }
 

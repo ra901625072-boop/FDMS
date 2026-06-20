@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Family Settings — Hearth</title>
+  <title>Family Settings — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-  <div id="hearth-layout-container">
+  <div id="famdoc-layout-container">
     
     <div class="content-header">
       <div>
@@ -19,13 +19,13 @@
     </div>
 
     <!-- Single Full-Width Card for Member Roster -->
-    <div class="hearth-card">
+    <div class="famdoc-card">
       <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
         <i class="fas fa-users-cog" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Family Roster
       </h2>
 
-      <div class="hearth-table-wrapper">
-        <table class="hearth-table">
+      <div class="famdoc-table-wrapper">
+        <table class="famdoc-table">
           <thead>
             <tr>
               <th>Member</th>
@@ -52,7 +52,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       // Delay slightly for auth check to finish
       setTimeout(() => {
-        const user = JSON.parse(localStorage.getItem("hearth_user"));
+        const user = JSON.parse(localStorage.getItem("famdoc_user"));
         if (!user) return;
 
         if (user.role === "admin") {
@@ -80,7 +80,7 @@
       tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-ink-muted);">Loading family roster...</td></tr>`;
 
       try {
-        familyMembers = await HearthAPI.family.getMembers();
+        familyMembers = await FamDocAPI.family.getMembers();
         tbody.innerHTML = "";
 
         const isAdmin = currentUser.role === "admin";
@@ -88,7 +88,7 @@
         familyMembers.forEach(member => {
           const tr = document.createElement("tr");
           
-          const joinedDate = HearthAPI.utils.formatDate(member.joined_at);
+          const joinedDate = FamDocAPI.utils.formatDate(member.joined_at);
           
           const isCurrentUser = member.user_id === currentUser.id;
           const roleBadge = member.role === "admin" 
@@ -126,14 +126,14 @@
     async function removeMember(userId, name) {
       if (confirm(`Are you sure you want to remove "${name}" from the family vault? They will immediately lose all access rights.`)) {
         try {
-          await HearthAPI.family.removeMember(userId);
-          HearthAPI.utils.showToast(`Removed "${name}" from family group.`, "success");
+          await FamDocAPI.family.removeMember(userId);
+          FamDocAPI.utils.showToast(`Removed "${name}" from family group.`, "success");
           
           // Reload
-          const user = JSON.parse(localStorage.getItem("hearth_user"));
+          const user = JSON.parse(localStorage.getItem("famdoc_user"));
           loadMembers(user);
         } catch (err) {
-          HearthAPI.utils.showToast(err.message, "error");
+          FamDocAPI.utils.showToast(err.message, "error");
         }
       }
     }

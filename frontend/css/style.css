@@ -1,4 +1,4 @@
-/* Hearth Design System */
+/* FamDoc Design System */
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
@@ -226,7 +226,7 @@ a:hover {
 }
 
 /* Paper Cards & Containers */
-.hearth-card {
+.famdoc-card {
   background-color: #FFFDF9;
   border: 1px solid var(--border-paper);
   border-radius: var(--radius-lg);
@@ -236,11 +236,11 @@ a:hover {
   box-shadow: 0 2px 4px rgba(43, 37, 32, 0.02);
 }
 
-.hearth-card:hover {
+.famdoc-card:hover {
   border-color: var(--border-paper-dark);
 }
 
-.hearth-card-header {
+.famdoc-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -249,7 +249,7 @@ a:hover {
   padding-bottom: 1rem;
 }
 
-.hearth-card-title {
+.famdoc-card-title {
   font-size: 1.25rem;
   color: var(--text-ink);
 }
@@ -433,7 +433,7 @@ a:hover {
 }
 
 /* Notifications / Alerts */
-.hearth-alert {
+.famdoc-alert {
   padding: 1rem 1.25rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-paper);
@@ -444,19 +444,19 @@ a:hover {
   font-size: 0.9rem;
 }
 
-.hearth-alert-info {
+.famdoc-alert-info {
   background-color: #F3ECE1;
   border-color: var(--border-paper-dark);
   color: var(--text-ink);
 }
 
-.hearth-alert-success {
+.famdoc-alert-success {
   background-color: var(--success-sage-light);
   border-color: #C8D6C8;
   color: #374A37;
 }
 
-.hearth-alert-warning {
+.famdoc-alert-warning {
   background-color: var(--warning-red-light);
   border-color: #E2C9C6;
   color: #812E28;
@@ -822,7 +822,7 @@ a:hover {
   display: flex;
 }
 
-.hearth-modal {
+.famdoc-modal {
   background-color: #FFFDF9;
   border: 1px solid var(--border-paper);
   border-radius: var(--radius-lg);
@@ -954,25 +954,25 @@ a:hover {
 }
 
 /* Table Design (e.g. for members) */
-.hearth-table-wrapper {
+.famdoc-table-wrapper {
   overflow-x: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-paper);
   background-color: #FFFDF9;
 }
 
-.hearth-table {
+.famdoc-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
 }
 
-.hearth-table th, .hearth-table td {
+.famdoc-table th, .famdoc-table td {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border-paper);
 }
 
-.hearth-table th {
+.famdoc-table th {
   background-color: #FAF5EE;
   font-weight: 600;
   font-size: 0.85rem;
@@ -981,11 +981,11 @@ a:hover {
   color: var(--text-ink-muted);
 }
 
-.hearth-table tr:last-child td {
+.famdoc-table tr:last-child td {
   border-bottom: none;
 }
 
-.hearth-table tbody tr:hover {
+.famdoc-table tbody tr:hover {
   background-color: #FAF6EF;
 }
 

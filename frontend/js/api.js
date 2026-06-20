@@ -1,10 +1,10 @@
 /**
- * Hearth API Client Wrapper
+ * FamDoc API Client Wrapper
  */
-const HearthAPI = {
+const FamDocAPI = {
   // Base request method
   async request(path, options = {}) {
-    const token = localStorage.getItem("hearth_token");
+    const token = localStorage.getItem("famdoc_token");
     const headers = options.headers || {};
 
     // Don't set Content-Type if we're sending FormData (browser does it automatically with boundary)
@@ -35,8 +35,8 @@ const HearthAPI = {
                              window.location.pathname === "/";
         
         if (!isPublicPage) {
-          localStorage.removeItem("hearth_token");
-          localStorage.removeItem("hearth_user");
+          localStorage.removeItem("famdoc_token");
+          localStorage.removeItem("famdoc_user");
           window.location.href = "/login.html";
           return null;
         }
@@ -64,38 +64,38 @@ const HearthAPI = {
   // Auth Endpoints
   auth: {
     async register(username, email, password) {
-      return HearthAPI.request("/api/auth/register", {
+      return FamDocAPI.request("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({ username, email, password })
       });
     },
 
     async login(email, password) {
-      const data = await HearthAPI.request("/api/auth/login", {
+      const data = await FamDocAPI.request("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password })
       });
       if (data && data.access_token) {
-        localStorage.setItem("hearth_token", data.access_token);
+        localStorage.setItem("famdoc_token", data.access_token);
       }
       return data;
     },
 
     async joinFamily(username, email, secretCode) {
-      const data = await HearthAPI.request("/api/auth/family-login", {
+      const data = await FamDocAPI.request("/api/auth/family-login", {
         method: "POST",
         body: JSON.stringify({ username, email, secret_code: secretCode })
       });
       if (data && data.access_token) {
-        localStorage.setItem("hearth_token", data.access_token);
+        localStorage.setItem("famdoc_token", data.access_token);
       }
       return data;
     },
 
     async me() {
-      const user = await HearthAPI.request("/api/auth/me");
+      const user = await FamDocAPI.request("/api/auth/me");
       if (user) {
-        localStorage.setItem("hearth_user", JSON.stringify(user));
+        localStorage.setItem("famdoc_user", JSON.stringify(user));
       }
       return user;
     },
@@ -104,19 +104,19 @@ const HearthAPI = {
       const payload = {};
       if (username) payload.username = username;
       if (password) payload.password = password;
-      const user = await HearthAPI.request("/api/auth/profile", {
+      const user = await FamDocAPI.request("/api/auth/profile", {
         method: "PUT",
         body: JSON.stringify(payload)
       });
       if (user) {
-        localStorage.setItem("hearth_user", JSON.stringify(user));
+        localStorage.setItem("famdoc_user", JSON.stringify(user));
       }
       return user;
     },
 
     logout() {
-      localStorage.removeItem("hearth_token");
-      localStorage.removeItem("hearth_user");
+      localStorage.removeItem("famdoc_token");
+      localStorage.removeItem("famdoc_user");
       window.location.href = "/login.html";
     }
   },
@@ -124,28 +124,28 @@ const HearthAPI = {
   // Family Endpoints
   family: {
     async setup(name, maxMembers) {
-      return HearthAPI.request("/api/family/setup", {
+      return FamDocAPI.request("/api/family/setup", {
         method: "POST",
         body: JSON.stringify({ name, max_members: maxMembers })
       });
     },
 
     async getMembers() {
-      return HearthAPI.request("/api/family/members");
+      return FamDocAPI.request("/api/family/members");
     },
 
     async removeMember(userId) {
-      return HearthAPI.request(`/api/family/members/${userId}`, {
+      return FamDocAPI.request(`/api/family/members/${userId}`, {
         method: "DELETE"
       });
     },
 
     async getDetails() {
-      return HearthAPI.request("/api/family/details");
+      return FamDocAPI.request("/api/family/details");
     },
 
     async regenerateCode(name, maxMembers) {
-      return HearthAPI.request("/api/family/regenerate-code", {
+      return FamDocAPI.request("/api/family/regenerate-code", {
         method: "POST",
         body: JSON.stringify({ name, max_members: maxMembers })
       });
@@ -155,11 +155,11 @@ const HearthAPI = {
   // Storage Endpoints
   storage: {
     async getConfig() {
-      return HearthAPI.request("/api/storage/config");
+      return FamDocAPI.request("/api/storage/config");
     },
 
     async configureMega(email, password) {
-      return HearthAPI.request("/api/storage/config/mega", {
+      return FamDocAPI.request("/api/storage/config/mega", {
         method: "POST",
         body: JSON.stringify({ email, password })
       });
@@ -169,25 +169,25 @@ const HearthAPI = {
   // Folder Endpoints
   folders: {
     async getFolders() {
-      return HearthAPI.request("/api/folders");
+      return FamDocAPI.request("/api/folders");
     },
 
     async create(name, parentId = null) {
-      return HearthAPI.request("/api/folders", {
+      return FamDocAPI.request("/api/folders", {
         method: "POST",
         body: JSON.stringify({ name, parent_id: parentId })
       });
     },
 
     async rename(folderId, name) {
-      return HearthAPI.request(`/api/folders/${folderId}`, {
+      return FamDocAPI.request(`/api/folders/${folderId}`, {
         method: "PUT",
         body: JSON.stringify({ name })
       });
     },
 
     async delete(folderId) {
-      return HearthAPI.request(`/api/folders/${folderId}`, {
+      return FamDocAPI.request(`/api/folders/${folderId}`, {
         method: "DELETE"
       });
     }
@@ -200,7 +200,7 @@ const HearthAPI = {
       if (folderId !== null) {
         path += `?folder_id=${folderId === "root" ? "root" : folderId}`;
       }
-      return HearthAPI.request(path);
+      return FamDocAPI.request(path);
     },
 
     async upload(fileObj, folderId = null, onProgress = null) {
@@ -216,7 +216,7 @@ const HearthAPI = {
           const xhr = new XMLHttpRequest();
           xhr.open("POST", "/api/files/upload");
           
-          const token = localStorage.getItem("hearth_token");
+          const token = localStorage.getItem("famdoc_token");
           if (token) {
             xhr.setRequestHeader("Authorization", `Bearer ${token}`);
           }
@@ -250,21 +250,21 @@ const HearthAPI = {
         });
       }
 
-      return HearthAPI.request("/api/files/upload", {
+      return FamDocAPI.request("/api/files/upload", {
         method: "POST",
         body: formData
       });
     },
 
     async rename(fileId, filename) {
-      return HearthAPI.request(`/api/files/${fileId}`, {
+      return FamDocAPI.request(`/api/files/${fileId}`, {
         method: "PUT",
         body: JSON.stringify({ filename })
       });
     },
 
     async delete(fileId) {
-      return HearthAPI.request(`/api/files/${fileId}`, {
+      return FamDocAPI.request(`/api/files/${fileId}`, {
         method: "DELETE"
       });
     },
@@ -281,17 +281,17 @@ const HearthAPI = {
   // Recycle Bin Endpoints
   recycleBin: {
     async get() {
-      return HearthAPI.request("/api/recycle-bin");
+      return FamDocAPI.request("/api/recycle-bin");
     },
 
     async restore(itemType, itemId) {
-      return HearthAPI.request(`/api/recycle-bin/${itemType}/${itemId}/restore`, {
+      return FamDocAPI.request(`/api/recycle-bin/${itemType}/${itemId}/restore`, {
         method: "POST"
       });
     },
 
     async purge(itemType, itemId) {
-      return HearthAPI.request(`/api/recycle-bin/${itemType}/${itemId}/purge`, {
+      return FamDocAPI.request(`/api/recycle-bin/${itemType}/${itemId}/purge`, {
         method: "DELETE"
       });
     }
@@ -306,21 +306,21 @@ const HearthAPI = {
           queryParams.append(key, params[key]);
         }
       });
-      return HearthAPI.request(`/api/search?${queryParams.toString()}`);
+      return FamDocAPI.request(`/api/search?${queryParams.toString()}`);
     }
   },
 
   // Dashboard Endpoint
   dashboard: {
     async getStats() {
-      return HearthAPI.request("/api/dashboard/stats");
+      return FamDocAPI.request("/api/dashboard/stats");
     }
   },
 
   // Sharing Endpoints
   sharing: {
     async createLink(fileId, password = null, expiresAt = null, maxDownloads = null) {
-      return HearthAPI.request(`/api/files/${fileId}/share`, {
+      return FamDocAPI.request(`/api/files/${fileId}/share`, {
         method: "POST",
         body: JSON.stringify({
           password,
@@ -331,18 +331,18 @@ const HearthAPI = {
     },
 
     async getLinks(fileId) {
-      return HearthAPI.request(`/api/files/${fileId}/share`);
+      return FamDocAPI.request(`/api/files/${fileId}/share`);
     },
 
     async revokeLink(token) {
-      return HearthAPI.request(`/api/shared/links/${token}`, {
+      return FamDocAPI.request(`/api/shared/links/${token}`, {
         method: "DELETE"
       });
     },
 
     // Public Sharing
     async getPublicInfo(token) {
-      return HearthAPI.request(`/api/shared/${token}`);
+      return FamDocAPI.request(`/api/shared/${token}`);
     },
 
     async downloadPublic(token, password = null) {
@@ -439,7 +439,7 @@ const HearthAPI = {
     },
 
     showToast(message, type = "info") {
-      const containerId = "hearth-toast-container";
+      const containerId = "famdoc-toast-container";
       let container = document.getElementById(containerId);
       
       if (!container) {
@@ -457,7 +457,7 @@ const HearthAPI = {
       }
 
       const toast = document.createElement("div");
-      toast.className = `hearth-alert hearth-alert-${type === "error" ? "warning" : type}`;
+      toast.className = `famdoc-alert famdoc-alert-${type === "error" ? "warning" : type}`;
       toast.style.margin = "0";
       toast.style.boxShadow = "0 4px 12px rgba(43, 37, 32, 0.1)";
       toast.style.animation = "toastEnter 0.25s ease-out";

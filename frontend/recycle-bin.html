@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recycle Bin — Hearth</title>
+  <title>Recycle Bin — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-  <div id="hearth-layout-container">
+  <div id="famdoc-layout-container">
     
     <div class="content-header">
       <div>
@@ -19,7 +19,7 @@
     </div>
 
     <!-- Main Explorer Surface -->
-    <div class="hearth-card" style="min-height: 400px;">
+    <div class="famdoc-card" style="min-height: 400px;">
       
       <div id="recycle-list" class="items-list">
         <!-- Dynamically populated list of items -->
@@ -79,11 +79,11 @@
       emptyState.style.display = "none";
 
       try {
-        const user = JSON.parse(localStorage.getItem("hearth_user"));
+        const user = JSON.parse(localStorage.getItem("famdoc_user"));
         if (!user) return;
         const isAdmin = user.role === "admin";
 
-        const data = await HearthAPI.recycleBin.get();
+        const data = await FamDocAPI.recycleBin.get();
         deletedFiles = data.files || [];
         deletedFolders = data.folders || [];
 
@@ -103,7 +103,7 @@
           row.style.padding = "0.75rem 1.25rem";
           row.style.gap = "1rem";
 
-          const formattedDate = HearthAPI.utils.formatDate(folder.deleted_at);
+          const formattedDate = FamDocAPI.utils.formatDate(folder.deleted_at);
 
           row.innerHTML = `
             <i class="item-icon folder fas fa-folder-open" style="font-size: 1.75rem;"></i>
@@ -137,9 +137,9 @@
           row.style.padding = "0.75rem 1.25rem";
           row.style.gap = "1rem";
 
-          const iconClass = HearthAPI.utils.getFileIconClass(file.file_type, file.filename);
-          const formattedSize = HearthAPI.utils.formatBytes(file.size_bytes);
-          const formattedDate = HearthAPI.utils.formatDate(file.deleted_at);
+          const iconClass = FamDocAPI.utils.getFileIconClass(file.file_type, file.filename);
+          const formattedSize = FamDocAPI.utils.formatBytes(file.size_bytes);
+          const formattedDate = FamDocAPI.utils.formatDate(file.deleted_at);
 
           row.innerHTML = `
             <i class="item-icon ${iconClass}" style="font-size: 1.75rem;"></i>
@@ -167,28 +167,28 @@
 
       } catch (err) {
         console.error("Recycle bin load error:", err);
-        HearthAPI.utils.showToast("Failed to load deleted files.", "error");
+        FamDocAPI.utils.showToast("Failed to load deleted files.", "error");
       }
     }
 
     async function restoreItem(type, id, name) {
       try {
-        await HearthAPI.recycleBin.restore(type, id);
-        HearthAPI.utils.showToast(`Restored "${name}" successfully.`, "success");
+        await FamDocAPI.recycleBin.restore(type, id);
+        FamDocAPI.utils.showToast(`Restored "${name}" successfully.`, "success");
         loadRecycleBin();
       } catch (err) {
-        HearthAPI.utils.showToast(err.message, "error");
+        FamDocAPI.utils.showToast(err.message, "error");
       }
     }
 
     async function purgeItem(type, id, name) {
       if (confirm(`CRITICAL: Are you sure you want to permanently delete "${name}"? This physical deletion cannot be undone!`)) {
         try {
-          await HearthAPI.recycleBin.purge(type, id);
-          HearthAPI.utils.showToast(`Permanently deleted "${name}".`, "success");
+          await FamDocAPI.recycleBin.purge(type, id);
+          FamDocAPI.utils.showToast(`Permanently deleted "${name}".`, "success");
           loadRecycleBin();
         } catch (err) {
-          HearthAPI.utils.showToast(err.message, "error");
+          FamDocAPI.utils.showToast(err.message, "error");
         }
       }
     }

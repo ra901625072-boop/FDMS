@@ -1,5 +1,6 @@
 import secrets
 import string
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -45,7 +46,8 @@ def setup_family(
         admin_id=current_user.id,
         secret_code_hash=hashed_code,
         secret_code_sha256=sha256_hash,
-        max_members=setup_data.max_members
+        max_members=setup_data.max_members,
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=1)
     )
     db.add(new_family)
     db.flush()
@@ -145,6 +147,7 @@ def regenerate_family_code(
     family.max_members = setup_data.max_members
     family.secret_code_hash = hashed_code
     family.secret_code_sha256 = sha256_hash
+    family.expires_at = datetime.now(timezone.utc) + timedelta(minutes=1)
     db.commit()
 
     return schemas.FamilySetupResponse(

@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Log In — Hearth</title>
-  <meta name="description" content="Log in to your Hearth Family Vault to access shared files, folders, and settings.">
+  <title>Log In — FamDoc</title>
+  <meta name="description" content="Log in to your FamDoc Family Vault to access shared files, folders, and settings.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div class="guest-wrapper">
-    <div class="hearth-card auth-card">
+    <div class="famdoc-card auth-card">
       <div class="auth-header">
         <a href="/index.html" class="auth-logo">
-          <i class="fas fa-fire"></i>
-          <span>Hearth</span>
+          <i class="fas fa-box-archive"></i>
+          <span>FamDoc</span>
         </a>
         <p class="auth-subtitle">Enter your family keepsake vault</p>
       </div>
 
-      <div id="error-alert" class="hearth-alert hearth-alert-warning" style="display: none;">
+      <div id="error-alert" class="famdoc-alert famdoc-alert-warning" style="display: none;">
         <i class="fas fa-exclamation-triangle" style="margin-top: 2px;"></i>
         <div id="error-message">Error message details go here.</div>
       </div>
@@ -42,7 +42,7 @@
       </form>
 
       <div class="auth-footer" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 2rem;">
-        <div>New to Hearth? <a href="/register.html">Create a Vault</a></div>
+        <div>New to FamDoc? <a href="/register.html">Create a Vault</a></div>
         <div>Invited by family? <a href="/join.html">Join with Code</a></div>
       </div>
     </div>
@@ -75,12 +75,12 @@
         submitBtn.querySelector("span").textContent = "Opening Vault...";
 
         // Call login API
-        await HearthAPI.auth.login(email, password);
+        await FamDocAPI.auth.login(email, password);
 
         // Fetch profile to verify family association
-        const user = await HearthAPI.auth.me();
+        const user = await FamDocAPI.auth.me();
 
-        HearthAPI.utils.showToast(`Welcome back, ${user.username}!`, "success");
+        FamDocAPI.utils.showToast(`Welcome back, ${user.username}!`, "success");
 
         // Redirect based on family status
         setTimeout(() => {

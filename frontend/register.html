@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create Your Vault — Hearth</title>
-  <meta name="description" content="Register as a Family Vault Administrator on Hearth. Set up your vault and invite family members.">
+  <title>Create Your Vault — FamDoc</title>
+  <meta name="description" content="Register as a Family Vault Administrator on FamDoc. Set up your vault and invite family members.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div class="guest-wrapper">
-    <div class="hearth-card auth-card">
+    <div class="famdoc-card auth-card">
       <div class="auth-header">
         <a href="/index.html" class="auth-logo">
-          <i class="fas fa-fire"></i>
-          <span>Hearth</span>
+          <i class="fas fa-box-archive"></i>
+          <span>FamDoc</span>
         </a>
         <p class="auth-subtitle">Create a new family keepsake vault</p>
       </div>
 
-      <div id="error-alert" class="hearth-alert hearth-alert-warning" style="display: none;">
+      <div id="error-alert" class="famdoc-alert famdoc-alert-warning" style="display: none;">
         <i class="fas fa-exclamation-triangle" style="margin-top: 2px;"></i>
         <div id="error-message">Error message details go here.</div>
       </div>
@@ -105,12 +105,12 @@
         submitBtn.querySelector("span").textContent = "Creating Account...";
 
         // 1. Register User
-        await HearthAPI.auth.register(username, email, password);
+        await FamDocAPI.auth.register(username, email, password);
 
         // 2. Automatically Log In
-        await HearthAPI.auth.login(email, password);
+        await FamDocAPI.auth.login(email, password);
 
-        HearthAPI.utils.showToast("Account created successfully!", "success");
+        FamDocAPI.utils.showToast("Account created successfully!", "success");
 
         // 3. Redirect to Family Setup
         setTimeout(() => {
