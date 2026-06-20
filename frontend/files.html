@@ -549,19 +549,30 @@
     // Actions dropdown manager
     function toggleDropdown(button) {
       const menu = button.nextElementSibling;
+      const card = button.closest(".vault-item");
       
       // Close active dropdown
       if (activeDropdown && activeDropdown !== menu) {
         activeDropdown.classList.remove("show");
+        const activeCard = activeDropdown.closest(".vault-item");
+        if (activeCard) activeCard.classList.remove("dropdown-open");
       }
 
       menu.classList.toggle("show");
+      if (card) {
+        if (menu.classList.contains("show")) {
+          card.classList.add("dropdown-open");
+        } else {
+          card.classList.remove("dropdown-open");
+        }
+      }
       activeDropdown = menu.classList.contains("show") ? menu : null;
 
       // Click outside to dismiss dropdown
       const dismissDropdown = (e) => {
         if (!button.contains(e.target) && !menu.contains(e.target)) {
           menu.classList.remove("show");
+          if (card) card.classList.remove("dropdown-open");
           document.removeEventListener("click", dismissDropdown);
           if (activeDropdown === menu) activeDropdown = null;
         }
@@ -961,6 +972,36 @@
 
       searchInput.addEventListener("input", handleFilterChange);
       typeFilter.addEventListener("change", handleFilterChange);
+
+      // Mobile FAB listeners
+      const fabBtn = document.getElementById("mobile-fab");
+      const fabMenu = document.getElementById("fab-menu");
+      if (fabBtn && fabMenu) {
+        fabBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          fabMenu.classList.toggle("open");
+          fabBtn.classList.toggle("active");
+        });
+
+        document.getElementById("fab-new-folder").addEventListener("click", (e) => {
+          e.stopPropagation();
+          fabMenu.classList.remove("open");
+          fabBtn.classList.remove("active");
+          document.getElementById("btn-new-folder").click();
+        });
+
+        document.getElementById("fab-upload-file").addEventListener("click", (e) => {
+          e.stopPropagation();
+          fabMenu.classList.remove("open");
+          fabBtn.classList.remove("active");
+          document.getElementById("btn-upload-file").click();
+        });
+
+        document.addEventListener("click", () => {
+          fabMenu.classList.remove("open");
+          fabBtn.classList.remove("active");
+        });
+      }
     }
 
     // Sequential File Upload Helper
@@ -1028,5 +1069,22 @@
       });
     }
   </script>
+
+  <!-- Floating Action Button for Mobile -->
+  <div class="mobile-fab-container">
+    <button class="fab-btn" id="mobile-fab">
+      <i class="fas fa-plus"></i>
+    </button>
+    <div class="fab-menu" id="fab-menu">
+      <button class="fab-menu-item" id="fab-upload-file" title="Upload File">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>Upload File</span>
+      </button>
+      <button class="fab-menu-item" id="fab-new-folder" title="New Folder">
+        <i class="fas fa-folder-plus"></i>
+        <span>New Folder</span>
+      </button>
+    </div>
+  </div>
 </body>
 </html>

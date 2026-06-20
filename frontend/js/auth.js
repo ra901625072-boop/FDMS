@@ -86,7 +86,6 @@ function injectLayout(user) {
   // 2. Create Mobile Header
   const mobileHeader = document.createElement("div");
   mobileHeader.className = "mobile-header";
-  mobileHeader.style.cssText = "display: none; width: 100%; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background-color: var(--bg-linen); border-bottom: 1px solid var(--border-paper); position: fixed; top: 0; left: 0; z-index: 999;";
   mobileHeader.innerHTML = `
     <a href="/dashboard.html" class="sidebar-logo" style="margin-bottom: 0; font-size: 1.25rem;">
       <i class="fas fa-box-archive"></i>
@@ -143,7 +142,38 @@ function injectLayout(user) {
     </div>
   `;
 
-  // 4. Create Main Content element
+  // 4. Create Backdrop Overlay
+  const backdrop = document.createElement("div");
+  backdrop.className = "drawer-backdrop";
+  backdrop.id = "drawerBackdrop";
+
+  // 5. Create Bottom Navigation Bar
+  const bottomNav = document.createElement("nav");
+  bottomNav.className = "bottom-nav";
+  bottomNav.innerHTML = `
+    <a href="/dashboard.html" class="nav-btn ${isActive('dashboard.html')}">
+      <i class="fas fa-th-large"></i>
+      <span>Home</span>
+    </a>
+    <a href="/files.html" class="nav-btn ${isActive('files.html')}">
+      <i class="fas fa-archive"></i>
+      <span>Vault</span>
+    </a>
+    <a href="/family.html" class="nav-btn ${isActive('family.html')}">
+      <i class="fas fa-users"></i>
+      <span>Family</span>
+    </a>
+    <a href="#" class="nav-btn" id="bottomNavMore">
+      <i class="fas fa-ellipsis-h"></i>
+      <span>More</span>
+    </a>
+    <a href="/profile.html" class="nav-btn ${isActive('profile.html')}">
+      <i class="fas fa-user"></i>
+      <span>Profile</span>
+    </a>
+  `;
+
+  // 6. Create Main Content element
   const mainContent = document.createElement("main");
   mainContent.className = "main-content";
   mainContent.id = "mainContent";
@@ -153,12 +183,14 @@ function injectLayout(user) {
     mainContent.appendChild(container.firstChild);
   }
 
-  // 5. Append to layout wrapper
+  // 7. Append to layout wrapper
   layoutWrapper.appendChild(mobileHeader);
   layoutWrapper.appendChild(sidebar);
+  layoutWrapper.appendChild(backdrop);
+  layoutWrapper.appendChild(bottomNav);
   layoutWrapper.appendChild(mainContent);
 
-  // 6. Put layoutWrapper back into container
+  // 8. Put layoutWrapper back into container
   container.appendChild(layoutWrapper);
 
   // Attach logout handler
@@ -166,46 +198,52 @@ function injectLayout(user) {
     FamDocAPI.auth.logout();
   });
 
-  // Mobile menu toggle
+  // Navigation toggle listeners
   const hamburger = document.getElementById("hamburgerToggle");
   const sidebarMenu = document.getElementById("sidebarMenu");
-  
-  if (hamburger && sidebarMenu) {
-    hamburger.addEventListener("click", (e) => {
-      e.stopPropagation();
-      sidebarMenu.classList.toggle("open");
-      const icon = hamburger.querySelector("i");
-      if (sidebarMenu.classList.contains("open")) {
-        icon.className = "fas fa-times";
-      } else {
-        icon.className = "fas fa-bars";
-      }
-    });
+  const drawerBackdrop = document.getElementById("drawerBackdrop");
+  const bottomNavMore = document.getElementById("bottomNavMore");
 
-    // Close sidebar on tapping main content on mobile
-    mainContent.addEventListener("click", () => {
-      if (sidebarMenu.classList.contains("open")) {
-        sidebarMenu.classList.remove("open");
-        hamburger.querySelector("i").className = "fas fa-bars";
-      }
+  const toggleSidebar = (e) => {
+    if (e) e.stopPropagation();
+    sidebarMenu.classList.toggle("open");
+    
+    // Toggle backdrop visibility
+    if (sidebarMenu.classList.contains("open")) {
+      drawerBackdrop.classList.add("show");
+      if (hamburger) hamburger.querySelector("i").className = "fas fa-times";
+    } else {
+      drawerBackdrop.classList.remove("show");
+      if (hamburger) hamburger.querySelector("i").className = "fas fa-bars";
+    }
+  };
+
+  const closeSidebar = () => {
+    if (sidebarMenu.classList.contains("open")) {
+      sidebarMenu.classList.remove("open");
+      drawerBackdrop.classList.remove("show");
+      if (hamburger) hamburger.querySelector("i").className = "fas fa-bars";
+    }
+  };
+
+  // Hamburger click
+  if (hamburger) {
+    hamburger.addEventListener("click", toggleSidebar);
+  }
+
+  // "More" bottom nav item click
+  if (bottomNavMore) {
+    bottomNavMore.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleSidebar(e);
     });
   }
 
-  // Inject responsive header css helper
-  const responsiveStyles = document.createElement("style");
-  responsiveStyles.textContent = `
-    @media (max-width: 768px) {
-      .mobile-header {
-        display: flex !important;
-      }
-      .sidebar {
-        top: 60px;
-        height: calc(100vh - 60px);
-      }
-      .main-content {
-        margin-top: 60px;
-      }
-    }
-  `;
-  document.head.appendChild(responsiveStyles);
+  // Backdrop click to close sidebar
+  if (drawerBackdrop) {
+    drawerBackdrop.addEventListener("click", closeSidebar);
+  }
+
+  // Close on main content click
+  mainContent.addEventListener("click", closeSidebar);
 }

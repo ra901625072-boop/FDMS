@@ -96,7 +96,7 @@
             : '<span class="badge badge-success">Member</span>';
 
           const actionsHtml = isAdmin
-            ? `<td style="text-align: right;">
+            ? `<td data-label="Actions" style="text-align: right;">
                 ${isCurrentUser 
                   ? '<span style="font-size: 0.8rem; color: var(--text-ink-muted); font-style: italic;">You</span>' 
                   : `<button class="btn btn-danger" data-action="remove" data-id="${member.user_id}" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;">
@@ -107,12 +107,12 @@
             : "";
 
           tr.innerHTML = `
-            <td>
+            <td data-label="Member">
               <div style="font-weight: 600;">${member.username || 'Unknown'}</div>
             </td>
-            <td style="font-family: var(--font-mono); font-size: 0.85rem;">${member.email || '—'}</td>
-            <td>${roleBadge}</td>
-            <td>${joinedDate.split(',')[0]}</td>
+            <td data-label="Email" style="font-family: var(--font-mono); font-size: 0.85rem;">${member.email || '—'}</td>
+            <td data-label="Role">${roleBadge}</td>
+            <td data-label="Joined">${joinedDate.split(',')[0]}</td>
             ${actionsHtml}
           `;
           tbody.appendChild(tr);
