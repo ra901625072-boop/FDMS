@@ -1,282 +1,211 @@
-// ==========================================
-// Authentication & User Data
-// ==========================================
+/**
+ * Hearth Authentication & Layout Manager
+ */
+document.addEventListener("DOMContentLoaded", async () => {
+  // Determine page type
+  const path = window.location.pathname;
+  const isSharedPage = path.includes("shared.html");
+  const isGuestPage = path.includes("index.html") || 
+                      path.includes("login.html") || 
+                      path.includes("register.html") || 
+                      path.includes("join.html") ||
+                      path === "/" ||
+                      path === "";
 
-async function fetchCurrentUser() {
-  try {
-    const user = await api.get("/api/auth/me");
-    state.user = user;
-    localStorage.setItem("user", JSON.stringify(user));
-    
-    // Render sidebar details
-    document.getElementById("user-email-display").innerText = user.email;
-    document.getElementById("user-role-display").innerText = user.role === "admin" ? "Admin" : "Member";
-    document.getElementById("user-avatar-char").innerText = user.username ? user.username.charAt(0).toUpperCase() : "U";
-    
-    // Profile view details
-    const profileUsername = document.getElementById("profile-username-display");
-    if(profileUsername) profileUsername.innerText = user.username;
-    const profileEmail = document.getElementById("profile-email-display");
-    if(profileEmail) profileEmail.innerText = user.email;
-    const profileRole = document.getElementById("profile-role-display");
-    if(profileRole) profileRole.innerText = user.role;
+  const token = localStorage.getItem("hearth_token");
 
-    // Show/hide Create Family Login button
-    const btnCreateFamily = document.getElementById("btn-create-family-login");
-    if(btnCreateFamily) {
-        btnCreateFamily.style.display = user.role === "admin" ? "block" : "none";
+  // Public shared link page doesn't require session redirects
+  if (isSharedPage) {
+    return;
+  }
+
+  if (isGuestPage) {
+    // If logged in, redirect away from guest pages to dashboard
+    if (token) {
+      window.location.href = "/dashboard.html";
     }
+    return;
+  }
 
-    // Hide/show admin specific fields
-    const adminFields = document.querySelectorAll(".admin-only");
+  // Auth pages require token
+  if (!token) {
+    window.location.href = "/index.html";
+    return;
+  }
+
+  // Load user profile
+  let user = null;
+  try {
+    user = await HearthAPI.auth.me();
+  } catch (error) {
+    // Session expired or invalid
+    HearthAPI.utils.showToast("Your session has expired. Please log in again.", "error");
+    setTimeout(() => {
+      HearthAPI.auth.logout();
+    }, 1500);
+    return;
+  }
+
+  // Check family setup requirement
+  const isSetupPage = path.includes("family-setup.html");
+  if (!user.family_id) {
     if (user.role === "admin") {
-      adminFields.forEach(f => f.style.display = "block");
-    } else {
-      adminFields.forEach(f => f.style.display = "none");
-    }
-    
-    return user;
-  } catch (err) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigateTo("#login");
-  }
-}
-
-// ==========================================
-// Form Submission & Logic
-// ==========================================
-
-async function handleLoginSubmit(e) {
-  e.preventDefault();
-  const email = document.getElementById("login-email").value.trim();
-  const password = document.getElementById("login-password").value;
-  
-  try {
-    const res = await api.post("/api/auth/login", { email, password });
-    if (res.access_token) {
-      localStorage.setItem("token", res.access_token);
-      showToast("Logged in successfully", "success");
-      await fetchCurrentUser();
-      navigateTo("#dashboard");
-    }
-  } catch (err) {
-    showToast(err.message, "error");
-  }
-}
-
-async function handleFamilyLoginSubmit(e) {
-  e.preventDefault();
-  const username = document.getElementById("family-login-username").value.trim();
-  const email = document.getElementById("family-login-email").value.trim();
-  const secretCode = document.getElementById("family-login-secret").value.trim();
-  const errorMsg = document.getElementById("family-login-error");
-  errorMsg.innerText = "";
-  
-  try {
-    const res = await api.post("/api/auth/family-login", { username, email, secret_code: secretCode });
-    if (res.access_token) {
-      localStorage.setItem("token", res.access_token);
-      showToast("Family Login successful", "success");
-      await fetchCurrentUser();
-      navigateTo("#dashboard");
-    }
-  } catch (err) {
-    errorMsg.innerText = err.message;
-  }
-}
-
-function validateSignupField(fieldId) {
-  const field = document.getElementById(`signup-${fieldId}`);
-  const errorDiv = document.getElementById(`error-${fieldId}`);
-  if (!field || !errorDiv) return true;
-
-  errorDiv.innerText = "";
-  field.style.borderColor = "";
-
-  if (!field.value) {
-    errorDiv.innerText = "This field is required.";
-    field.style.borderColor = "var(--danger)";
-    return false;
-  }
-
-  if (fieldId === 'username') {
-    if (field.value.length < 3 || field.value.length > 20) {
-      errorDiv.innerText = "Username must be 3-20 characters.";
-      field.style.borderColor = "var(--danger)";
-      return false;
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(field.value)) {
-      errorDiv.innerText = "Only alphanumeric characters and underscores allowed.";
-      field.style.borderColor = "var(--danger)";
-      return false;
-    }
-  }
-
-  if (fieldId === 'password') {
-    if (field.value.length < 8) {
-      errorDiv.innerText = "Password must be at least 8 characters.";
-      field.style.borderColor = "var(--danger)";
-      return false;
-    }
-    if (!/[A-Z]/.test(field.value)) {
-      errorDiv.innerText = "Password must contain at least one uppercase letter.";
-      field.style.borderColor = "var(--danger)";
-      return false;
-    }
-    if (!/[0-9]/.test(field.value)) {
-      errorDiv.innerText = "Password must contain at least one number.";
-      field.style.borderColor = "var(--danger)";
-      return false;
-    }
-  }
-
-  if (fieldId === 'confirm-password') {
-    const pwd = document.getElementById("signup-password").value;
-    if (field.value !== pwd) {
-      errorDiv.innerText = "Passwords do not match.";
-      field.style.borderColor = "var(--danger)";
-      return false;
-    }
-  }
-
-  // Clear styles on success
-  field.style.borderColor = "var(--success)";
-  return true;
-}
-
-async function handleRegisterSubmit(e) {
-  e.preventDefault();
-  
-  const fields = ['username', 'email', 'password', 'confirm-password'];
-  let isValid = true;
-  for (let f of fields) {
-    if (!validateSignupField(f)) isValid = false;
-  }
-  
-  if (!isValid) return;
-
-  const username = document.getElementById("signup-username").value.trim();
-  const email = document.getElementById("signup-email").value.trim();
-  const password = document.getElementById("signup-password").value;
-  
-  try {
-    await api.post("/api/auth/register", { username, email, password });
-    showToast("Registration successful! You can now log in.", "success");
-    document.getElementById("signup-form").reset();
-    document.querySelectorAll(".input-field").forEach(f => f.style.borderColor = "");
-    navigateTo("#login");
-  } catch (err) {
-    showToast(err.message, "error");
-  }
-}
-
-async function handleFamilySetupSubmit(e) {
-  e.preventDefault();
-  const name = document.getElementById("family-setup-name").value.trim();
-  const maxMembers = parseInt(document.getElementById("family-setup-max").value);
-
-  try {
-    const res = await api.post("/api/family/setup", { name, max_members: maxMembers });
-    closeModal("family-setup-modal");
-    
-    // Display the Secret Code
-    document.getElementById("display-secret-code").innerText = res.secret_code;
-    openModal("secret-code-modal");
-    
-  } catch (err) {
-    showToast(err.message, "error");
-  }
-}
-
-// ==========================================
-// UI Bindings
-// ==========================================
-
-document.addEventListener("DOMContentLoaded", () => {
-  // Login Tabs switching
-  const tabPersonal = document.getElementById("tab-personal-login");
-  const tabFamily = document.getElementById("tab-family-login");
-  const formPersonal = document.getElementById("login-form");
-  const formFamily = document.getElementById("family-login-form");
-
-  if(tabPersonal && tabFamily) {
-    tabPersonal.onclick = () => {
-      tabPersonal.classList.add("active");
-      tabFamily.classList.remove("active");
-      formPersonal.style.display = "block";
-      formFamily.style.display = "none";
-    };
-    tabFamily.onclick = () => {
-      tabFamily.classList.add("active");
-      tabPersonal.classList.remove("active");
-      formFamily.style.display = "block";
-      formPersonal.style.display = "none";
-    };
-  }
-
-  // Family secret code auto-hyphenation & toggle
-  const secretInput = document.getElementById("family-login-secret");
-  if(secretInput) {
-    secretInput.addEventListener("input", function (e) {
-      let target = e.target;
-      let val = target.value.replace(/-/g, '').toUpperCase();
-      if (val.length > 4) {
-        val = val.substring(0, 4) + '-' + val.substring(4, 8);
+      if (!isSetupPage) {
+        window.location.href = "/family-setup.html";
+        return;
       }
-      target.value = val;
+    } else {
+      // Members must always belong to a family (registered via code)
+      HearthAPI.utils.showToast("Account error: No family associated.", "error");
+      HearthAPI.auth.logout();
+      return;
+    }
+  } else {
+    // If family is already set up and user goes to setup page, redirect to dashboard
+    if (isSetupPage) {
+      window.location.href = "/dashboard.html";
+      return;
+    }
+  }
+
+  // Dynamic layout injection
+  injectLayout(user);
+});
+
+function injectLayout(user) {
+  const container = document.getElementById("hearth-layout-container");
+  if (!container) return;
+
+  const currentPath = window.location.pathname;
+  const isActive = (page) => currentPath.includes(page) ? "active" : "";
+
+  // 1. Create Layout Wrapper
+  const layoutWrapper = document.createElement("div");
+  layoutWrapper.className = "layout-wrapper";
+
+  // 2. Create Mobile Header
+  const mobileHeader = document.createElement("div");
+  mobileHeader.className = "mobile-header";
+  mobileHeader.style.cssText = "display: none; width: 100%; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background-color: var(--bg-linen); border-bottom: 1px solid var(--border-paper); position: fixed; top: 0; left: 0; z-index: 999;";
+  mobileHeader.innerHTML = `
+    <a href="/dashboard.html" class="sidebar-logo" style="margin-bottom: 0; font-size: 1.25rem;">
+      <i class="fas fa-fire"></i>
+      <span>Hearth</span>
+    </a>
+    <button class="hamburger" id="hamburgerToggle">
+      <i class="fas fa-bars"></i>
+    </button>
+  `;
+
+  // 3. Create Sidebar
+  const sidebar = document.createElement("nav");
+  sidebar.className = "sidebar";
+  sidebar.id = "sidebarMenu";
+  sidebar.innerHTML = `
+    <a href="/dashboard.html" class="sidebar-logo">
+      <i class="fas fa-fire"></i>
+      <span>Hearth</span>
+    </a>
+    
+    <div class="sidebar-nav">
+      <a href="/dashboard.html" class="nav-item ${isActive('dashboard.html')}">
+        <i class="fas fa-th-large"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="/files.html" class="nav-item ${isActive('files.html')}">
+        <i class="fas fa-archive"></i>
+        <span>Shared Vault</span>
+      </a>
+      <a href="/recycle-bin.html" class="nav-item ${isActive('recycle-bin.html')}">
+        <i class="fas fa-trash-alt"></i>
+        <span>Recycle Bin</span>
+      </a>
+      <a href="/family.html" class="nav-item ${isActive('family.html')}">
+        <i class="fas fa-users"></i>
+        <span>Family Group</span>
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-profile-badge" onclick="window.location.href='/profile.html'" style="cursor: pointer;">
+        <div class="user-avatar">
+          ${user.username ? user.username.substring(0, 2).toUpperCase() : "U"}
+        </div>
+        <div class="user-info">
+          <span class="user-name">${user.username}</span>
+          <span class="user-role">${user.role}</span>
+        </div>
+      </div>
+      <button id="logoutBtn" class="btn btn-secondary" style="width: 100%; justify-content: center; gap: 0.5rem;">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Sign Out</span>
+      </button>
+    </div>
+  `;
+
+  // 4. Create Main Content element
+  const mainContent = document.createElement("main");
+  mainContent.className = "main-content";
+  mainContent.id = "mainContent";
+
+  // Move all existing children of container into mainContent (preserves event listeners!)
+  while (container.firstChild) {
+    mainContent.appendChild(container.firstChild);
+  }
+
+  // 5. Append to layout wrapper
+  layoutWrapper.appendChild(mobileHeader);
+  layoutWrapper.appendChild(sidebar);
+  layoutWrapper.appendChild(mainContent);
+
+  // 6. Put layoutWrapper back into container
+  container.appendChild(layoutWrapper);
+
+  // Attach logout handler
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    HearthAPI.auth.logout();
+  });
+
+  // Mobile menu toggle
+  const hamburger = document.getElementById("hamburgerToggle");
+  const sidebarMenu = document.getElementById("sidebarMenu");
+  
+  if (hamburger && sidebarMenu) {
+    hamburger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      sidebarMenu.classList.toggle("open");
+      const icon = hamburger.querySelector("i");
+      if (sidebarMenu.classList.contains("open")) {
+        icon.className = "fas fa-times";
+      } else {
+        icon.className = "fas fa-bars";
+      }
+    });
+
+    // Close sidebar on tapping main content on mobile
+    mainContent.addEventListener("click", () => {
+      if (sidebarMenu.classList.contains("open")) {
+        sidebarMenu.classList.remove("open");
+        hamburger.querySelector("i").className = "fas fa-bars";
+      }
     });
   }
 
-  const toggleSecret = document.getElementById("toggle-secret-visibility");
-  if(toggleSecret) {
-    toggleSecret.onclick = () => {
-      const type = secretInput.getAttribute("type") === "password" ? "text" : "password";
-      secretInput.setAttribute("type", type);
-      const icon = document.getElementById("eye-icon-secret");
-      if (type === "text") {
-        icon.setAttribute("data-lucide", "eye-off");
-      } else {
-        icon.setAttribute("data-lucide", "eye");
+  // Inject responsive header css helper
+  const responsiveStyles = document.createElement("style");
+  responsiveStyles.textContent = `
+    @media (max-width: 768px) {
+      .mobile-header {
+        display: flex !important;
       }
-      lucide.createIcons();
-    };
-  }
-
-  // Signup Inline validation blur events
-  ['username', 'email', 'password', 'confirm-password'].forEach(f => {
-    const el = document.getElementById(`signup-${f}`);
-    if(el) el.addEventListener('blur', () => validateSignupField(f));
-  });
-
-  // Family Setup & Secret Code Modals
-  const familySetupForm = document.getElementById("family-setup-form");
-  if(familySetupForm) familySetupForm.onsubmit = handleFamilySetupSubmit;
-
-  const copyBtn = document.getElementById("btn-copy-code");
-  if(copyBtn) {
-    copyBtn.onclick = () => {
-      const code = document.getElementById("display-secret-code").innerText;
-      copyToClipboard(code);
-    };
-  }
-
-  const shareBtn = document.getElementById("btn-share-code");
-  if(shareBtn) {
-    shareBtn.onclick = async () => {
-      const code = document.getElementById("display-secret-code").innerText;
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: 'FamilyVault Secret Code',
-            text: `Join our FamilyVault! Our secret code is: ${code}\nThis code expires in 30 days.`,
-          });
-        } catch (err) {
-          console.error("Share failed:", err);
-        }
-      } else {
-        showToast("Web Share API not supported on this browser.", "info");
+      .sidebar {
+        top: 60px;
+        height: calc(100vh - 60px);
       }
-    };
-  }
-});
+      .main-content {
+        margin-top: 60px;
+      }
+    }
+  `;
+  document.head.appendChild(responsiveStyles);
+}

@@ -32,16 +32,19 @@ def setup_family(
     # Generate an ID for the family
     family_id = "".join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(12))
 
+    import hashlib
     plaintext_code = generate_family_secret_code()
     # Format code with hyphen for better UX (e.g. XXXX-XXXX)
     formatted_plaintext = f"{plaintext_code[:4]}-{plaintext_code[4:]}"
     hashed_code = auth.get_password_hash(plaintext_code)
+    sha256_hash = hashlib.sha256(plaintext_code.encode("utf-8")).hexdigest()
 
     new_family = models.Family(
         id=family_id,
         name=setup_data.name,
         admin_id=current_user.id,
         secret_code_hash=hashed_code,
+        secret_code_sha256=sha256_hash,
         max_members=setup_data.max_members
     )
     db.add(new_family)
@@ -75,3 +78,78 @@ def get_family_members(
 
     members = db.query(models.FamilyMember).filter(models.FamilyMember.family_id == membership.family_id).all()
     return members
+
+@router.delete("/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_family_member(
+    user_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Only admins can remove members
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can remove family members.")
+
+    if current_user.id == user_id:
+        raise HTTPException(status_code=400, detail="Admins cannot remove themselves. Assign a new admin first.")
+
+    membership = db.query(models.FamilyMember).filter(
+        models.FamilyMember.user_id == user_id,
+        models.FamilyMember.family_id == current_user.family_id
+    ).first()
+
+    if not membership:
+        raise HTTPException(status_code=404, detail="Member not found in your family.")
+
+    db.delete(membership)
+    db.commit()
+    return None
+
+@router.get("/details", response_model=schemas.FamilyResponse)
+def get_family_details(
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Find which family the current user belongs to
+    membership = db.query(models.FamilyMember).filter(models.FamilyMember.user_id == current_user.id).first()
+    if not membership:
+        raise HTTPException(status_code=404, detail="You do not belong to any family.")
+
+    family = db.query(models.Family).filter(models.Family.id == membership.family_id).first()
+    if not family:
+        raise HTTPException(status_code=404, detail="Family group not found.")
+
+    return family
+
+@router.post("/regenerate-code", response_model=schemas.FamilySetupResponse)
+def regenerate_family_code(
+    setup_data: schemas.FamilySetup,
+    current_user: models.User = Depends(auth.get_admin_user),
+    db: Session = Depends(get_db)
+):
+    # Find the user's family
+    family = db.query(models.Family).filter(models.Family.admin_id == current_user.id).first()
+    if not family:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You do not administer any family group."
+        )
+
+    import hashlib
+    plaintext_code = generate_family_secret_code()
+    formatted_plaintext = f"{plaintext_code[:4]}-{plaintext_code[4:]}"
+    hashed_code = auth.get_password_hash(plaintext_code)
+    sha256_hash = hashlib.sha256(plaintext_code.encode("utf-8")).hexdigest()
+
+    # Update family details
+    family.name = setup_data.name
+    family.max_members = setup_data.max_members
+    family.secret_code_hash = hashed_code
+    family.secret_code_sha256 = sha256_hash
+    db.commit()
+
+    return schemas.FamilySetupResponse(
+        family_id=family.id,
+        name=family.name,
+        secret_code=formatted_plaintext,
+        max_members=family.max_members
+    )

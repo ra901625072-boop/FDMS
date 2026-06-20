@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shared Family Record — Hearth</title>
+  <!-- SEO meta -->
+  <meta name="description" content="View and download a shared family document vault record securely.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  
+  <div class="guest-wrapper">
+    <div class="hearth-card shared-layout">
+      
+      <!-- Logo header -->
+      <div style="text-align: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border-paper); padding-bottom: 1rem;">
+        <div class="auth-logo" style="margin-bottom: 0;">
+          <i class="fas fa-fire"></i>
+          <span>Hearth</span>
+        </div>
+        <p style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-ink-muted); margin-top: 0.25rem;">Family Keepsake Vault</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="shared-loading" style="text-align: center; padding: 2rem 0;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--accent-terracotta); margin-bottom: 1rem;"></i>
+        <p style="color: var(--text-ink-muted);">Retrieving shared file details...</p>
+      </div>
+
+      <!-- Error State -->
+      <div id="shared-error" style="display: none; text-align: center; padding: 2rem 0;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--warning-red); margin-bottom: 1.25rem;"></i>
+        <h3 class="hearth-card-title" style="margin-bottom: 0.5rem;">Shared Link Invalid</h3>
+        <p id="error-desc" style="color: var(--text-ink-muted); margin-bottom: 1.5rem;">This link has expired, reached its maximum download limit, or is incorrect.</p>
+        <a href="/index.html" class="btn btn-secondary">Go to Hearth Homepage</a>
+      </div>
+
+      <!-- Active Content State -->
+      <div id="shared-content" style="display: none;">
+        <div class="shared-file-info">
+          <i id="file-icon" class="shared-file-icon file-generic fas fa-file"></i>
+          <div class="shared-file-details">
+            <div id="file-name" class="shared-file-name">filename.txt</div>
+            <div id="file-size" class="shared-file-size">0 Bytes</div>
+          </div>
+        </div>
+
+        <div id="expiry-notice" style="font-size: 0.8rem; color: var(--text-ink-muted); text-align: center; margin-bottom: 1.5rem; font-family: var(--font-sans); display: none;">
+          <i class="far fa-clock" style="margin-right: 0.25rem;"></i> Link expires on: <span id="expiry-date">Jan 1, 2026</span>
+        </div>
+
+        <!-- Password verification form (if protected) -->
+        <div id="password-section" style="display: none; background-color: var(--warning-red-light); border: 1px solid #E2C9C6; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+          <h4 style="font-family: var(--font-serif); color: #812E28; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-lock"></i> Password Protected
+          </h4>
+          <p style="font-size: 0.85rem; color: #812E28; margin-bottom: 1rem;">This download link requires a verification password provided by the owner.</p>
+          
+          <div class="form-group" style="margin-bottom: 0;">
+            <input type="password" id="share-passcode" class="form-control" placeholder="Enter password to unlock" style="border-color: #CBA8A4;">
+          </div>
+        </div>
+
+        <!-- Download button -->
+        <button id="btn-download" class="btn btn-primary" style="width: 100%; padding: 0.85rem 1rem;">
+          <i class="fas fa-download"></i>
+          <span>Download Shared File</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let linkToken = null;
+    let isPasswordProtected = false;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      linkToken = urlParams.get("token");
+
+      if (!linkToken) {
+        showError("Invalid link token. Please check the URL.");
+        return;
+      }
+
+      await loadSharedFileInfo();
+    });
+
+    async function loadSharedFileInfo() {
+      const loading = document.getElementById("shared-loading");
+      const content = document.getElementById("shared-content");
+      
+      try {
+        const info = await HearthAPI.sharing.getPublicInfo(linkToken);
+        
+        loading.style.display = "none";
+        content.style.display = "block";
+
+        // Set metadata
+        document.getElementById("file-name").textContent = info.filename;
+        document.getElementById("file-size").textContent = HearthAPI.utils.formatBytes(info.size_bytes);
+        
+        const iconClass = HearthAPI.utils.getFileIconClass(info.file_type, info.filename);
+        document.getElementById("file-icon").className = `shared-file-icon ${iconClass}`;
+
+        // Expiration check
+        if (info.expires_at) {
+          const formatted = HearthAPI.utils.formatDate(info.expires_at);
+          document.getElementById("expiry-date").textContent = formatted;
+          document.getElementById("expiry-notice").style.display = "block";
+        }
+
+        // Password requirement check
+        isPasswordProtected = info.is_password_protected;
+        if (isPasswordProtected) {
+          document.getElementById("password-section").style.display = "block";
+        }
+
+        // Connect download action
+        document.getElementById("btn-download").addEventListener("click", triggerDownload);
+
+      } catch (err) {
+        showError(err.message || "Shared link not found or expired.");
+      }
+    }
+
+    async function triggerDownload() {
+      const downloadBtn = document.getElementById("btn-download");
+      const passwordInput = document.getElementById("share-passcode");
+      const originalText = downloadBtn.querySelector("span").textContent;
+
+      let password = null;
+      if (isPasswordProtected) {
+        password = passwordInput.value.trim();
+        if (!password) {
+          HearthAPI.utils.showToast("Password is required to unlock this file.", "error");
+          passwordInput.focus();
+          return;
+        }
+      }
+
+      try {
+        downloadBtn.disabled = true;
+        downloadBtn.querySelector("span").textContent = "Downloading File...";
+
+        await HearthAPI.sharing.downloadPublic(linkToken, password);
+        
+        HearthAPI.utils.showToast("File downloaded successfully!", "success");
+      } catch (err) {
+        HearthAPI.utils.showToast(err.message || "Failed to download. Check the password.", "error");
+      } finally {
+        downloadBtn.disabled = false;
+        downloadBtn.querySelector("span").textContent = originalText;
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById("shared-loading").style.display = "none";
+      document.getElementById("shared-content").style.display = "none";
+      
+      const errorDiv = document.getElementById("shared-error");
+      document.getElementById("error-desc").textContent = msg;
+      errorDiv.style.display = "block";
+    }
+  </script>
+</body>
+</html>

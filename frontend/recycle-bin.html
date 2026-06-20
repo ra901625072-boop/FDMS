@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recycle Bin — Hearth</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div id="hearth-layout-container">
+    
+    <div class="content-header">
+      <div>
+        <h1 class="page-title">Recycle Bin</h1>
+        <p class="page-subtitle">Recover soft-deleted items. Only family administrators can permanently purge records.</p>
+      </div>
+    </div>
+
+    <!-- Main Explorer Surface -->
+    <div class="hearth-card" style="min-height: 400px;">
+      
+      <div id="recycle-list" class="items-list">
+        <!-- Dynamically populated list of items -->
+      </div>
+      
+      <!-- Empty State -->
+      <div id="recycle-empty" class="empty-state" style="display: none; padding: 4rem 0;">
+        <i class="fas fa-trash-restore empty-state-icon" style="font-size: 3.5rem;"></i>
+        <h3 class="empty-state-title">Recycle bin is empty</h3>
+        <p class="empty-state-text">No folders or files have been deleted recently.</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    let deletedFiles = [];
+    let deletedFolders = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Delay slightly for auth check
+      setTimeout(() => {
+        loadRecycleBin();
+      }, 50);
+
+      // Event delegation for restore and purge actions
+      document.getElementById("recycle-list").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-action]");
+        if (!btn) return;
+
+        const action = btn.getAttribute("data-action");
+        const type = btn.getAttribute("data-type");
+        const id = parseInt(btn.getAttribute("data-id"));
+
+        if (type === "folder") {
+          const folder = deletedFolders.find(f => f.id === id);
+          if (!folder) return;
+          if (action === "restore") restoreItem("folder", id, folder.name);
+          else if (action === "purge") purgeItem("folder", id, folder.name);
+        } else {
+          const file = deletedFiles.find(f => f.id === id);
+          if (!file) return;
+          if (action === "restore") restoreItem("file", id, file.filename);
+          else if (action === "purge") purgeItem("file", id, file.filename);
+        }
+      });
+    });
+
+    async function loadRecycleBin() {
+      const listContainer = document.getElementById("recycle-list");
+      const emptyState = document.getElementById("recycle-empty");
+      
+      listContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-ink-muted); text-align: center; margin-top: 2rem;">Retrieving deleted records...</p>`;
+      emptyState.style.display = "none";
+
+      try {
+        const user = JSON.parse(localStorage.getItem("hearth_user"));
+        if (!user) return;
+        const isAdmin = user.role === "admin";
+
+        const data = await HearthAPI.recycleBin.get();
+        deletedFiles = data.files || [];
+        deletedFolders = data.folders || [];
+
+        if (deletedFiles.length === 0 && deletedFolders.length === 0) {
+          listContainer.innerHTML = "";
+          emptyState.style.display = "flex";
+          return;
+        }
+
+        listContainer.innerHTML = "";
+
+        // 1. Render Deleted Folders
+        deletedFolders.forEach(folder => {
+          const row = document.createElement("div");
+          row.className = "vault-item";
+          row.style.cursor = "default";
+          row.style.padding = "0.75rem 1.25rem";
+          row.style.gap = "1rem";
+
+          const formattedDate = HearthAPI.utils.formatDate(folder.deleted_at);
+
+          row.innerHTML = `
+            <i class="item-icon folder fas fa-folder-open" style="font-size: 1.75rem;"></i>
+            <div class="item-details" style="grid-template-columns: 2fr 1fr 1fr; width: 100%; display: grid; align-items: center;">
+              <div class="item-name" style="font-weight: 600;" title="${folder.name}">${folder.name}</div>
+              <div class="item-meta-date" style="font-size: 0.8rem; color: var(--warning-red);">Deleted: ${formattedDate.split(',')[0]}</div>
+              <div class="item-meta-size" style="font-size: 0.8rem;">Folder</div>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <button class="btn btn-secondary" data-action="restore" data-type="folder" data-id="${folder.id}" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" title="Restore">
+                <i class="fas fa-undo"></i>
+                <span>Restore</span>
+              </button>
+              ${isAdmin ? `
+                <button class="btn btn-danger" data-action="purge" data-type="folder" data-id="${folder.id}" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" title="Permanently Delete">
+                  <i class="fas fa-trash-alt"></i>
+                  <span>Purge</span>
+                </button>
+              ` : ""}
+            </div>
+          `;
+          listContainer.appendChild(row);
+        });
+
+        // 2. Render Deleted Files
+        deletedFiles.forEach(file => {
+          const row = document.createElement("div");
+          row.className = "vault-item";
+          row.style.cursor = "default";
+          row.style.padding = "0.75rem 1.25rem";
+          row.style.gap = "1rem";
+
+          const iconClass = HearthAPI.utils.getFileIconClass(file.file_type, file.filename);
+          const formattedSize = HearthAPI.utils.formatBytes(file.size_bytes);
+          const formattedDate = HearthAPI.utils.formatDate(file.deleted_at);
+
+          row.innerHTML = `
+            <i class="item-icon ${iconClass}" style="font-size: 1.75rem;"></i>
+            <div class="item-details" style="grid-template-columns: 2fr 1fr 1fr; width: 100%; display: grid; align-items: center;">
+              <div class="item-name" style="font-weight: 600;" title="${file.filename}">${file.filename}</div>
+              <div class="item-meta-date" style="font-size: 0.8rem; color: var(--warning-red);">Deleted: ${formattedDate.split(',')[0]}</div>
+              <div class="item-meta-size" style="font-size: 0.8rem;">${formattedSize}</div>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <button class="btn btn-secondary" data-action="restore" data-type="file" data-id="${file.id}" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" title="Restore">
+                <i class="fas fa-undo"></i>
+                <span>Restore</span>
+              </button>
+              ${isAdmin ? `
+                <button class="btn btn-danger" data-action="purge" data-type="file" data-id="${file.id}" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" title="Permanently Delete">
+                  <i class="fas fa-trash-alt"></i>
+                  <span>Purge</span>
+                </button>
+              ` : ""}
+            </div>
+          `;
+          listContainer.appendChild(row);
+        });
+
+      } catch (err) {
+        console.error("Recycle bin load error:", err);
+        HearthAPI.utils.showToast("Failed to load deleted files.", "error");
+      }
+    }
+
+    async function restoreItem(type, id, name) {
+      try {
+        await HearthAPI.recycleBin.restore(type, id);
+        HearthAPI.utils.showToast(`Restored "${name}" successfully.`, "success");
+        loadRecycleBin();
+      } catch (err) {
+        HearthAPI.utils.showToast(err.message, "error");
+      }
+    }
+
+    async function purgeItem(type, id, name) {
+      if (confirm(`CRITICAL: Are you sure you want to permanently delete "${name}"? This physical deletion cannot be undone!`)) {
+        try {
+          await HearthAPI.recycleBin.purge(type, id);
+          HearthAPI.utils.showToast(`Permanently deleted "${name}".`, "success");
+          loadRecycleBin();
+        } catch (err) {
+          HearthAPI.utils.showToast(err.message, "error");
+        }
+      }
+    }
+  </script>
+</body>
+</html>

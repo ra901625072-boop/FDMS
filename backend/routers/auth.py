@@ -1,5 +1,3 @@
-import secrets
-import string
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
@@ -91,13 +89,22 @@ def family_login(request: Request, login_in: schemas.FamilyLogin, db: Session = 
     
     # 1. All fields filled (Handled by Pydantic schema validation)
     # 2. Hash the entered code -> look up matching family record
+    import hashlib
     code_to_check = login_in.secret_code.replace("-", "").upper()
-    families = db.query(models.Family).all()
-    matched_family = None
-    for f in families:
-        if auth.verify_password(code_to_check, f.secret_code_hash):
-            matched_family = f
-            break
+    sha256_hash = hashlib.sha256(code_to_check.encode("utf-8")).hexdigest()
+    
+    # Try fast O(1) indexed lookup
+    matched_family = db.query(models.Family).filter(models.Family.secret_code_sha256 == sha256_hash).first()
+    
+    # Fallback to slow lookup for legacy records and auto-upgrade them
+    if not matched_family:
+        legacy_families = db.query(models.Family).filter(models.Family.secret_code_sha256 == None).all()
+        for f in legacy_families:
+            if auth.verify_password(code_to_check, f.secret_code_hash):
+                f.secret_code_sha256 = sha256_hash
+                db.commit()
+                matched_family = f
+                break
             
     if not matched_family:
         raise HTTPException(
@@ -106,11 +113,13 @@ def family_login(request: Request, login_in: schemas.FamilyLogin, db: Session = 
         )
 
     # 3. Check code has not expired
-    if matched_family.expires_at and matched_family.expires_at < datetime.now(timezone.utc):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="This family code has expired. Ask your admin to generate a new one."
-        )
+    if matched_family.expires_at:
+        expires_at_aware = matched_family.expires_at.replace(tzinfo=timezone.utc) if matched_family.expires_at.tzinfo is None else matched_family.expires_at
+        if expires_at_aware < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This family code has expired. Ask your admin to generate a new one."
+            )
 
     # 4. Check current member count < max_members
     current_members = db.query(models.FamilyMember).filter(models.FamilyMember.family_id == matched_family.id).count()
@@ -135,6 +144,13 @@ def family_login(request: Request, login_in: schemas.FamilyLogin, db: Session = 
             )
         user = existing_user
     else:
+        # Check if username is already taken by someone else
+        existing_username = db.query(models.User).filter(models.User.username == login_in.username).first()
+        if existing_username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A user with this username is already registered. Please choose a different name."
+            )
         # Create new user record
         user = models.User(
             username=login_in.username,
@@ -167,4 +183,30 @@ def family_login(request: Request, login_in: schemas.FamilyLogin, db: Session = 
 
 @router.get("/me", response_model=schemas.UserResponse)
 def get_me(current_user: models.User = Depends(auth.get_current_user)):
+    return current_user
+
+@router.put("/profile", response_model=schemas.UserResponse)
+def update_profile(
+    profile_in: schemas.UserProfileUpdate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    if profile_in.username is not None:
+        # Check conflicts
+        existing_user = db.query(models.User).filter(
+            models.User.username == profile_in.username,
+            models.User.id != current_user.id
+        ).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This username is already taken."
+            )
+        current_user.username = profile_in.username
+
+    if profile_in.password is not None:
+        current_user.password_hash = auth.get_password_hash(profile_in.password)
+
+    db.commit()
+    db.refresh(current_user)
     return current_user

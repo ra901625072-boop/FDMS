@@ -66,8 +66,20 @@ def get_current_user(
     return user
 
 
-def get_admin_user(current_user: models.User = Depends(get_current_user)) -> models.User:
-    if current_user.role != "admin":
+def get_admin_user(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> models.User:
+    # If the user is registered as an admin and has not set up/joined a family yet,
+    # allow them to proceed (necessary for initial family setup).
+    if current_user.role == "admin" and current_user.family_id is None:
+        return current_user
+
+    membership = db.query(models.FamilyMember).filter(
+        models.FamilyMember.family_id == current_user.family_id,
+        models.FamilyMember.user_id == current_user.id
+    ).first()
+    if not membership or membership.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Operation restricted to family administrator"

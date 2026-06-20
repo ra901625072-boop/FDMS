@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Hearth</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  
+  <div id="hearth-layout-container">
+    <!-- This container is dynamically populated by auth.js with sidebar and layout shell -->
+    
+    <div class="content-header">
+      <div>
+        <h1 class="page-title" id="welcome-message">Good day</h1>
+        <p class="page-subtitle">Here is the latest from your family vault.</p>
+      </div>
+    </div>
+
+
+    <!-- Dashboard Statistics Grid -->
+    <div class="dashboard-grid">
+      <div class="hearth-card stat-card">
+        <i class="fas fa-file-alt stat-icon"></i>
+        <div class="stat-label">Total Files</div>
+        <div class="stat-val" id="stat-files">0</div>
+      </div>
+      <div class="hearth-card stat-card">
+        <i class="fas fa-database stat-icon"></i>
+        <div class="stat-label">Space Occupied</div>
+        <div class="stat-val" id="stat-size">0 Bytes</div>
+      </div>
+      <div class="hearth-card stat-card">
+        <i class="fas fa-users stat-icon"></i>
+        <div class="stat-label">Family Members</div>
+        <div class="stat-val" id="stat-members">0</div>
+      </div>
+    </div>
+
+    <!-- Double Sections -->
+    <div class="dashboard-sections">
+      <!-- Recent Uploads Card -->
+      <div class="hearth-card">
+        <div class="hearth-card-header">
+          <h2 class="hearth-card-title"><i class="fas fa-clock" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Recent Vault Uploads</h2>
+          <a href="/files.html" style="font-size: 0.85rem; font-weight: 600;">Browse All <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></a>
+        </div>
+        
+        <div id="recent-uploads-list" class="items-list">
+          <!-- Populated dynamically -->
+          <div class="empty-state" style="padding: 2rem 0;">
+            <i class="fas fa-folder-open empty-state-icon" style="font-size: 2.5rem;"></i>
+            <h4 class="empty-state-title">No files uploaded yet</h4>
+            <p class="empty-state-text">Head over to the Shared Vault to add family files.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Feed Card -->
+      <div class="hearth-card">
+        <div class="hearth-card-header">
+          <h2 class="hearth-card-title"><i class="fas fa-history" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Vault Activity</h2>
+        </div>
+        
+        <div id="activity-feed-list" class="activity-feed">
+          <!-- Populated dynamically -->
+          <div class="empty-state" style="padding: 2rem 0;">
+            <i class="fas fa-stream empty-state-icon" style="font-size: 2.5rem;"></i>
+            <h4 class="empty-state-title">No recent activity</h4>
+            <p class="empty-state-text">Actions like uploads or deletes will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Wait slightly to ensure auth token check is processed in auth.js
+      setTimeout(async () => {
+        const userJson = localStorage.getItem("hearth_user");
+        if (!userJson) return;
+        const user = JSON.parse(userJson);
+
+        // Customize greeting
+        const welcome = document.getElementById("welcome-message");
+        const hours = new Date().getHours();
+        let greeting = "Good day";
+        if (hours < 12) greeting = "Good morning";
+        else if (hours < 17) greeting = "Good afternoon";
+        else greeting = "Good evening";
+        welcome.textContent = `${greeting}, ${user.username}`;
+
+        try {
+          // Fetch statistics
+          const stats = await HearthAPI.dashboard.getStats();
+          
+          // Set stats numbers
+          document.getElementById("stat-files").textContent = stats.total_files;
+          document.getElementById("stat-size").textContent = HearthAPI.utils.formatBytes(stats.total_size_bytes);
+          document.getElementById("stat-members").textContent = stats.total_members;
+
+          // Populate Recent Uploads
+          const recentList = document.getElementById("recent-uploads-list");
+          if (stats.recent_uploads && stats.recent_uploads.length > 0) {
+            recentList.innerHTML = "";
+            stats.recent_uploads.forEach(file => {
+              const fileCard = document.createElement("div");
+              fileCard.className = "vault-item";
+              fileCard.style.padding = "0.75rem 1rem";
+              fileCard.style.gap = "0.75rem";
+              
+              // Open preview on double click
+              fileCard.addEventListener("dblclick", () => {
+                window.location.href = `/files.html?preview=${file.id}`;
+              });
+              
+              const iconClass = HearthAPI.utils.getFileIconClass(file.file_type, file.filename);
+              const formattedSize = HearthAPI.utils.formatBytes(file.size_bytes);
+              const formattedDate = HearthAPI.utils.formatDate(file.upload_date);
+
+              fileCard.innerHTML = `
+                <i class="item-icon ${iconClass}"></i>
+                <div class="item-details" style="grid-template-columns: 2fr 1fr 1.2fr; width: 100%; display: grid; align-items: center;">
+                  <div class="item-name" style="font-size: 0.85rem;" title="${file.filename}">${file.filename}</div>
+                  <div class="item-meta-size" style="font-size: 0.75rem;">${formattedSize}</div>
+                  <div class="item-meta-date" style="font-size: 0.75rem;">${formattedDate.split(',')[0]}</div>
+                </div>
+              `;
+              recentList.appendChild(fileCard);
+            });
+          }
+
+          // Populate Activity logs
+          const activityFeed = document.getElementById("activity-feed-list");
+          if (stats.recent_activity && stats.recent_activity.length > 0) {
+            activityFeed.innerHTML = "";
+            stats.recent_activity.forEach(log => {
+              const activityItem = document.createElement("div");
+              activityItem.className = "activity-item";
+              
+              // Map actions to icons
+              let actionIcon = "fa-info-circle";
+              if (log.action.includes("UPLOAD")) actionIcon = "fa-file-upload";
+              if (log.action.includes("DELETE")) actionIcon = "fa-trash-alt";
+              if (log.action.includes("RENAME")) actionIcon = "fa-edit";
+              if (log.action.includes("DOWNLOAD")) actionIcon = "fa-download";
+              if (log.action.includes("SHARE")) actionIcon = "fa-share-alt";
+              if (log.action.includes("LOGIN")) actionIcon = "fa-sign-in-alt";
+              if (log.action.includes("CREATE")) actionIcon = "fa-folder-plus";
+
+              activityItem.innerHTML = `
+                <div class="activity-icon">
+                  <i class="fas ${actionIcon}"></i>
+                </div>
+                <div class="activity-details">
+                  <div><strong>${log.username || 'Someone'}</strong> ${cleanActionDetails(log.action, log.details)}</div>
+                  <div class="activity-time">${HearthAPI.utils.formatDate(log.timestamp)}</div>
+                </div>
+              `;
+              activityFeed.appendChild(activityItem);
+            });
+          }
+
+        } catch (err) {
+          console.error("Dashboard failed to load data:", err);
+          HearthAPI.utils.showToast("Failed to retrieve dashboard statistics.", "error");
+        }
+      }, 50);
+    });
+
+    // Helper to make log details readable
+    function cleanActionDetails(action, details) {
+      if (!details) return action.toLowerCase().replace("_", " ");
+      return details.replace("Uploaded file: ", "uploaded ").replace("Created folder: ", "created folder ").replace("Soft-deleted file: ", "deleted ").replace("Soft-deleted folder: ", "deleted folder ").replace("Downloaded file: ", "downloaded ").replace("Renamed file ", "renamed ").replace("Renamed folder ", "renamed folder ");
+    }
+  </script>
+</body>
+</html>

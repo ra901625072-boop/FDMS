@@ -29,6 +29,7 @@ class UserResponse(BaseModel):
     email: str
     role: str
     created_at: datetime
+    family_id: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -41,6 +42,20 @@ class TokenData(BaseModel):
     email: Optional[str] = None
     user_id: Optional[int] = None
     role: Optional[str] = None
+
+class UserProfileUpdate(BaseModel):
+    username: Optional[str] = Field(None, min_length=3, max_length=20, pattern=r"^[a-zA-Z0-9_\s]+$")
+    password: Optional[str] = Field(None, min_length=8)
+    
+    @field_validator('password')
+    def validate_password(cls, v):
+        if v is None:
+            return v
+        if not any(char.isupper() for char in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Password must contain at least one number')
+        return v
 
 # ==========================================
 # Family Schemas
@@ -78,6 +93,8 @@ class FamilyMemberResponse(BaseModel):
     user_id: int
     role: str
     joined_at: datetime
+    username: Optional[str] = None
+    email: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -139,6 +156,27 @@ class FileResponse(BaseModel):
     storage_provider: str
     cloud_file_id: str
     cloud_link: Optional[str]
+    is_shared: bool = False
 
     class Config:
         from_attributes = True
+
+
+# ==========================================
+# Sharing Schemas
+# ==========================================
+
+class ShareLinkCreate(BaseModel):
+    password: Optional[str] = Field(None, min_length=4, max_length=50)
+    expires_at: Optional[datetime] = None
+    max_downloads: Optional[int] = Field(None, ge=1)
+
+class ShareLinkResponse(BaseModel):
+    token: str
+    file_id: int
+    share_link: str
+    is_password_protected: bool
+    expires_at: Optional[datetime]
+    max_downloads: Optional[int]
+    download_count: int
+    created_at: datetime

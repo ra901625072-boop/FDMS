@@ -8,14 +8,25 @@ load_dotenv()
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8000")
 
+# CORS Origins Setup
+cors_origins_raw = os.getenv("CORS_ORIGINS", "")
+if cors_origins_raw:
+    CORS_ORIGINS = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+else:
+    CORS_ORIGINS = [FRONTEND_URL, "http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:5173", "http://127.0.0.1:5173"]
+
 # Database Settings
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./family_documents.db")
 
 # JWT Authentication Settings
 JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-family-document-vault-key-1234567890")
+IS_DEFAULT_JWT_SECRET = JWT_SECRET == "super-secret-family-document-vault-key-1234567890"
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")) # Default 24 hours
 
 # Mega Storage Settings
 MEGA_EMAIL = os.getenv("MEGA_EMAIL", "")
 MEGA_PASSWORD = os.getenv("MEGA_PASSWORD", "")
+
+# VirusTotal Scanner Settings
+VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY", "")

@@ -1,13 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
 import models
 import schemas
 import auth
-from storage import get_storage_provider
 from sqlalchemy import func
-from routers.files import get_family_storage_config
+from utils.audit import log_action
 
 router = APIRouter(prefix="/api/folders", tags=["Folders"])
 
@@ -22,9 +21,10 @@ def get_folders(
         func.coalesce(func.sum(models.File.size_bytes), 0).label('total_size'),
         func.max(models.File.upload_date).label('last_modified_file')
     ).outerjoin(
-        models.File, models.File.folder_id == models.Folder.id
+        models.File, (models.File.folder_id == models.Folder.id) & (models.File.deleted_at == None)
     ).filter(
-        models.Folder.family_id == current_user.family_id
+        models.Folder.family_id == current_user.family_id,
+        models.Folder.deleted_at == None
     ).group_by(models.Folder.id).all()
     
     result = []
@@ -49,14 +49,16 @@ def get_folders(
 @router.post("", response_model=schemas.FolderResponse, status_code=status.HTTP_201_CREATED)
 def create_folder(
     folder_in: schemas.FolderCreate,
+    request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
-    # If parent folder is specified, verify it exists and belongs to the family
+    # If parent folder is specified, verify it exists, belongs to the family, and is not deleted
     if folder_in.parent_id is not None:
         parent = db.query(models.Folder).filter(
             models.Folder.id == folder_in.parent_id,
-            models.Folder.family_id == current_user.family_id
+            models.Folder.family_id == current_user.family_id,
+            models.Folder.deleted_at == None
         ).first()
         if not parent:
             raise HTTPException(
@@ -74,6 +76,10 @@ def create_folder(
     db.commit()
     db.refresh(new_folder)
     
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_action(db, "CREATE_FOLDER", current_user.id, current_user.family_id, ip, f"Created folder: {new_folder.name}")
+    
     # Return formatted response
     return {
         "id": new_folder.id,
@@ -90,12 +96,14 @@ def create_folder(
 def rename_folder(
     folder_id: int,
     folder_in: schemas.FolderRename,
+    request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
     folder = db.query(models.Folder).filter(
         models.Folder.id == folder_id,
-        models.Folder.family_id == current_user.family_id
+        models.Folder.family_id == current_user.family_id,
+        models.Folder.deleted_at == None
     ).first()
     
     if not folder:
@@ -104,16 +112,21 @@ def rename_folder(
             detail="Folder not found"
         )
         
+    old_name = folder.name
     folder.name = folder_in.name.strip()
     db.commit()
     db.refresh(folder)
+    
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_action(db, "RENAME_FOLDER", current_user.id, current_user.family_id, ip, f"Renamed folder '{old_name}' to '{folder.name}'")
     
     # Calculate stats efficiently
     stats = db.query(
         func.count(models.File.id).label('file_count'),
         func.coalesce(func.sum(models.File.size_bytes), 0).label('total_size'),
         func.max(models.File.upload_date).label('last_modified_file')
-    ).filter(models.File.folder_id == folder.id).first()
+    ).filter(models.File.folder_id == folder.id, models.File.deleted_at == None).first()
     
     file_count = stats.file_count or 0
     total_size = stats.total_size or 0
@@ -132,49 +145,37 @@ def rename_folder(
         "last_modified": last_modified
     }
 
-def delete_folder_recursive(folder_id: int, family: models.Family, db: Session):
+def soft_delete_folder_recursive(folder_id: int, db: Session):
     # 1. Recurse into subfolders
-    subfolders = db.query(models.Folder).filter(models.Folder.parent_id == folder_id).all()
+    subfolders = db.query(models.Folder).filter(
+        models.Folder.parent_id == folder_id,
+        models.Folder.deleted_at == None
+    ).all()
     for sub in subfolders:
-        delete_folder_recursive(sub.id, family, db)
+        soft_delete_folder_recursive(sub.id, db)
         
-    # 2. Delete files in this folder from cloud and DB
-    files = db.query(models.File).filter(models.File.folder_id == folder_id).all()
-    if files and family.storage_provider:
-        try:
-            storage_config = get_family_storage_config(family, db)
-            provider = get_storage_provider(family.storage_provider)
-            for file in files:
-                try:
-                    provider.delete_file(storage_config, file.cloud_file_id)
-
-                except Exception as e:
-                    # Log but continue to ensure DB cleanup
-                    print(f"Warning: Failed to delete cloud file {file.cloud_file_id}: {str(e)}")
-                db.delete(file)
-        except Exception as e:
-            print(f"Warning: Failed to get storage provider: {str(e)}")
-            # Even if provider fails, delete file metadata to prevent dead references
-            for file in files:
-                db.delete(file)
-    else:
-        for file in files:
-            db.delete(file)
+    # 2. Soft delete files in this folder
+    db.query(models.File).filter(
+        models.File.folder_id == folder_id,
+        models.File.deleted_at == None
+    ).update({"deleted_at": func.now()}, synchronize_session=False)
             
-    # 3. Delete folder record
-    folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
-    if folder:
-        db.delete(folder)
+    # 3. Soft delete folder record
+    db.query(models.Folder).filter(
+        models.Folder.id == folder_id
+    ).update({"deleted_at": func.now()}, synchronize_session=False)
 
 @router.delete("/{folder_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_folder(
     folder_id: int,
+    request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
     folder = db.query(models.Folder).filter(
         models.Folder.id == folder_id,
-        models.Folder.family_id == current_user.family_id
+        models.Folder.family_id == current_user.family_id,
+        models.Folder.deleted_at == None
     ).first()
     
     if not folder:
@@ -183,9 +184,12 @@ def delete_folder(
             detail="Folder not found"
         )
         
-    family = db.query(models.Family).filter(models.Family.id == current_user.family_id).first()
-    
-    # Execute recursive delete
-    delete_folder_recursive(folder_id, family, db)
+    # Execute soft delete
+    soft_delete_folder_recursive(folder_id, db)
     db.commit()
+    
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_action(db, "DELETE_FOLDER", current_user.id, current_user.family_id, ip, f"Soft-deleted folder: {folder.name}")
+    
     return None

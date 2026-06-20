@@ -1,5 +1,5 @@
 import io
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -9,6 +9,7 @@ import schemas
 import auth
 from storage import get_storage_provider
 from sqlalchemy.orm import joinedload
+from utils.audit import log_action
 import os
 from config import (
     MEGA_EMAIL,
@@ -23,7 +24,10 @@ def get_files(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.File).options(joinedload(models.File.uploader)).filter(models.File.family_id == current_user.family_id)
+    query = db.query(models.File).options(joinedload(models.File.uploader)).filter(
+        models.File.family_id == current_user.family_id,
+        models.File.deleted_at == None
+    )
     
     if folder_id is not None:
         if folder_id == "root" or folder_id == "":
@@ -36,6 +40,8 @@ def get_files(
                 raise HTTPException(status_code=400, detail="Invalid folder_id format")
                 
     files = query.all()
+    
+    shared_file_ids = {sl.file_id for sl in db.query(models.SharedLink.file_id).filter(models.SharedLink.family_id == current_user.family_id).all()}
     
     # Format files responses to include uploader email
     result = []
@@ -56,7 +62,8 @@ def get_files(
             "upload_date": file.upload_date,
             "storage_provider": file.storage_provider,
             "cloud_file_id": file.cloud_file_id,
-            "cloud_link": file.cloud_link
+            "cloud_link": file.cloud_link,
+            "is_shared": file.id in shared_file_ids
         })
     
     family = db.query(models.Family).filter(models.Family.id == current_user.family_id).first()
@@ -122,8 +129,6 @@ def sync_local_to_mega(family_id: str):
         mega_prov = MegaProvider()
         local_prov = LocalStorageProvider()
         mega_config = family.storage_config
-        
-        import os
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
         local_config = {"vault_folder_id": os.path.join(base_dir, family.id)}
 
@@ -176,7 +181,6 @@ def get_family_storage_config(family: models.Family, db: Session) -> dict:
     
     config = family.storage_config or {}
     if family.storage_provider == "local":
-        import os
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
         config = {"vault_folder_id": os.path.join(base_dir, family.id)}
     if family.storage_provider == "mega":
@@ -189,6 +193,7 @@ def get_family_storage_config(family: models.Family, db: Session) -> dict:
 
 @router.post("/upload", response_model=schemas.FileResponse, status_code=status.HTTP_201_CREATED)
 async def upload_file(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     folder_id: Optional[int] = Form(None),
@@ -211,8 +216,33 @@ async def upload_file(
         if not folder:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target folder not found")
 
+    # Enforce file type validation
+    allowed_extensions = {".pdf", ".jpg", ".jpeg", ".png", ".docx", ".doc", ".xlsx", ".xls", ".txt"}
+    _, ext = os.path.splitext(file.filename.lower())
+    if ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File type not allowed. Supported formats: PDF, Word, Excel, Images, and TXT."
+        )
+
     file_content = await file.read()
     file_size = len(file_content)
+
+    # Enforce file size limit (50MB)
+    MAX_FILE_SIZE = 50 * 1024 * 1024
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size exceeds the maximum limit of 50MB."
+        )
+
+    # Enforce virus scanning check
+    from utils.virus_scan import scan_file_for_viruses
+    if not scan_file_for_viruses(file_content, file.filename):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Security error: Upload blocked. The file matches a known malware signature."
+        )
 
     # Perform upload via storage provider abstraction
     used_provider = family.storage_provider
@@ -233,7 +263,6 @@ async def upload_file(
         from storage.local import LocalStorageProvider
         local_prov = LocalStorageProvider()
         
-        import os
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
         local_config = {"vault_folder_id": os.path.join(base_dir, family.id)}
         local_vault_id = local_prov.ensure_vault_folder(family.id, local_config)
@@ -269,6 +298,10 @@ async def upload_file(
     db.commit()
     db.refresh(new_file)
     
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_action(db, "UPLOAD_FILE", current_user.id, current_user.family_id, ip, f"Uploaded file: {new_file.filename} ({new_file.size_bytes} bytes)")
+    
     return {
         "id": new_file.id,
         "filename": new_file.filename,
@@ -287,18 +320,24 @@ async def upload_file(
 @router.get("/{file_id}/download")
 def download_file(
     file_id: int,
+    request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
     file = db.query(models.File).filter(
         models.File.id == file_id,
-        models.File.family_id == current_user.family_id
+        models.File.family_id == current_user.family_id,
+        models.File.deleted_at == None
     ).first()
     
     if not file:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
         
     family = db.query(models.Family).filter(models.Family.id == current_user.family_id).first()
+    
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_action(db, "DOWNLOAD_FILE", current_user.id, current_user.family_id, ip, f"Downloaded file: {file.filename}")
     
     try:
         provider = get_storage_provider(file.storage_provider)
@@ -321,18 +360,24 @@ def download_file(
 @router.get("/{file_id}/preview")
 def preview_file(
     file_id: int,
+    request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
     file = db.query(models.File).filter(
         models.File.id == file_id,
-        models.File.family_id == current_user.family_id
+        models.File.family_id == current_user.family_id,
+        models.File.deleted_at == None
     ).first()
     
     if not file:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
         
     family = db.query(models.Family).filter(models.Family.id == current_user.family_id).first()
+    
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_action(db, "PREVIEW_FILE", current_user.id, current_user.family_id, ip, f"Previewed file: {file.filename}")
     
     try:
         provider = get_storage_provider(file.storage_provider)
@@ -353,12 +398,14 @@ def preview_file(
 def rename_file(
     file_id: int,
     file_in: schemas.FileRename,
+    request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
     file = db.query(models.File).filter(
         models.File.id == file_id,
-        models.File.family_id == current_user.family_id
+        models.File.family_id == current_user.family_id,
+        models.File.deleted_at == None
     ).first()
     
     if not file:
@@ -372,6 +419,7 @@ def rename_file(
         )
         
     family = db.query(models.Family).filter(models.Family.id == current_user.family_id).first()
+    old_name = file.filename
     new_name = file_in.filename.strip()
     
     # Rename in the cloud
@@ -387,8 +435,14 @@ def rename_file(
         
     # Update local DB metadata
     file.filename = new_name
+    if file.storage_provider == "local":
+        file.cloud_file_id = new_name
     db.commit()
     db.refresh(file)
+    
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_action(db, "RENAME_FILE", current_user.id, current_user.family_id, ip, f"Renamed file '{old_name}' to '{new_name}'")
     
     uploader_email = None
     if file.uploader:
@@ -412,12 +466,14 @@ def rename_file(
 @router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_file(
     file_id: int,
+    request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
     file = db.query(models.File).filter(
         models.File.id == file_id,
-        models.File.family_id == current_user.family_id
+        models.File.family_id == current_user.family_id,
+        models.File.deleted_at == None
     ).first()
     
     if not file:
@@ -430,17 +486,12 @@ def delete_file(
             detail="You do not have permission to delete files uploaded by other family members"
         )
         
-    family = db.query(models.Family).filter(models.Family.id == current_user.family_id).first()
-    
-    # Delete from the cloud storage
-    try:
-        provider = get_storage_provider(file.storage_provider)
-        config = get_family_storage_config(family, db)
-        provider.delete_file(config, file.cloud_file_id)
-    except Exception as e:
-        # We will log the warning and delete from the database anyway to prevent broken sync
-        print(f"Warning: Failed to delete file {file.cloud_file_id} from cloud: {str(e)}")
-            
-    db.delete(file)
+    from sqlalchemy.sql import func
+    file.deleted_at = func.now()
     db.commit()
+    
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_action(db, "DELETE_FILE", current_user.id, current_user.family_id, ip, f"Soft-deleted file: {file.filename}")
+    
     return None

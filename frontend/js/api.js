@@ -1,128 +1,502 @@
-const BASE_API_URL = ""; // Since files are served from the same server port, relative path is correct.
+/**
+ * Hearth API Client Wrapper
+ */
+const HearthAPI = {
+  // Base request method
+  async request(path, options = {}) {
+    const token = localStorage.getItem("hearth_token");
+    const headers = options.headers || {};
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return token ? { "Authorization": `Bearer ${token}` } : {};
-};
-
-const handleResponse = async (response) => {
-  if (response.status === 204) {
-    return null;
-  }
-  
-  const contentType = response.headers.get("content-type");
-  let data;
-  if (contentType && contentType.includes("application/json")) {
-    data = await response.json();
-  } else {
-    data = await response.text();
-  }
-
-  if (!response.ok) {
-    // If token is invalid or expired, automatically clear session and redirect to login
-    if (response.status === 401 && !window.location.hash.includes("login") && !window.location.hash.includes("register")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.hash = "#login";
+    // Don't set Content-Type if we're sending FormData (browser does it automatically with boundary)
+    if (!(options.body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
     }
-    const errorMessage = (data && data.detail) ? data.detail : "An error occurred on the server";
-    throw new Error(errorMessage);
-  }
-  return data;
-};
 
-const api = {
-  get: async (endpoint) => {
-    const response = await fetch(`${BASE_API_URL}${endpoint}`, {
-      method: "GET",
-      headers: {
-        ...getAuthHeaders(),
-      },
-    });
-    return handleResponse(response);
-  },
-
-  post: async (endpoint, payload) => {
-    const response = await fetch(`${BASE_API_URL}${endpoint}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify(payload),
-    });
-    return handleResponse(response);
-  },
-
-  put: async (endpoint, payload) => {
-    const response = await fetch(`${BASE_API_URL}${endpoint}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify(payload),
-    });
-    return handleResponse(response);
-  },
-
-  delete: async (endpoint) => {
-    const response = await fetch(`${BASE_API_URL}${endpoint}`, {
-      method: "DELETE",
-      headers: {
-        ...getAuthHeaders(),
-      },
-    });
-    return handleResponse(response);
-  },
-
-  // Upload file with progress monitoring using XMLHttpRequests
-  upload: (endpoint, formData, onProgress, onLoad, onError) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${BASE_API_URL}${endpoint}`);
-    
-    // Attach auth header
-    const token = localStorage.getItem("token");
     if (token) {
-      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // Monitor progress
-    if (xhr.upload && onProgress) {
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = Math.round((e.loaded / e.total) * 100);
-          onProgress(percentComplete);
+    const fetchOptions = {
+      ...options,
+      headers
+    };
+
+    try {
+      const response = await fetch(path, fetchOptions);
+
+      // Handle 401 Unauthorized globally
+      if (response.status === 401) {
+        // Only redirect if we're not on a public page or already trying to login
+        const isPublicPage = window.location.pathname.includes("index.html") || 
+                             window.location.pathname.includes("login.html") || 
+                             window.location.pathname.includes("register.html") || 
+                             window.location.pathname.includes("join.html") || 
+                             window.location.pathname.includes("shared.html") ||
+                             window.location.pathname === "/";
+        
+        if (!isPublicPage) {
+          localStorage.removeItem("hearth_token");
+          localStorage.removeItem("hearth_user");
+          window.location.href = "/login.html";
+          return null;
         }
+      }
+
+      if (!response.ok) {
+        // Parse error details
+        let errorMsg = "Something went wrong";
+        try {
+          const errData = await response.json();
+          errorMsg = errData.detail || errorMsg;
+        } catch (e) {}
+        throw new Error(errorMsg);
+      }
+
+      // Check if response is empty
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
+    } catch (error) {
+      console.error(`API Error on ${path}:`, error);
+      throw error;
+    }
+  },
+
+  // Auth Endpoints
+  auth: {
+    async register(username, email, password) {
+      return HearthAPI.request("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ username, email, password })
+      });
+    },
+
+    async login(email, password) {
+      const data = await HearthAPI.request("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
+      if (data && data.access_token) {
+        localStorage.setItem("hearth_token", data.access_token);
+      }
+      return data;
+    },
+
+    async joinFamily(username, email, secretCode) {
+      const data = await HearthAPI.request("/api/auth/family-login", {
+        method: "POST",
+        body: JSON.stringify({ username, email, secret_code: secretCode })
+      });
+      if (data && data.access_token) {
+        localStorage.setItem("hearth_token", data.access_token);
+      }
+      return data;
+    },
+
+    async me() {
+      const user = await HearthAPI.request("/api/auth/me");
+      if (user) {
+        localStorage.setItem("hearth_user", JSON.stringify(user));
+      }
+      return user;
+    },
+
+    async updateProfile(username, password) {
+      const payload = {};
+      if (username) payload.username = username;
+      if (password) payload.password = password;
+      const user = await HearthAPI.request("/api/auth/profile", {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      if (user) {
+        localStorage.setItem("hearth_user", JSON.stringify(user));
+      }
+      return user;
+    },
+
+    logout() {
+      localStorage.removeItem("hearth_token");
+      localStorage.removeItem("hearth_user");
+      window.location.href = "/login.html";
+    }
+  },
+
+  // Family Endpoints
+  family: {
+    async setup(name, maxMembers) {
+      return HearthAPI.request("/api/family/setup", {
+        method: "POST",
+        body: JSON.stringify({ name, max_members: maxMembers })
+      });
+    },
+
+    async getMembers() {
+      return HearthAPI.request("/api/family/members");
+    },
+
+    async removeMember(userId) {
+      return HearthAPI.request(`/api/family/members/${userId}`, {
+        method: "DELETE"
+      });
+    },
+
+    async getDetails() {
+      return HearthAPI.request("/api/family/details");
+    },
+
+    async regenerateCode(name, maxMembers) {
+      return HearthAPI.request("/api/family/regenerate-code", {
+        method: "POST",
+        body: JSON.stringify({ name, max_members: maxMembers })
       });
     }
+  },
 
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        let result;
-        try {
-          result = JSON.parse(xhr.responseText);
-        } catch (err) {
-          result = xhr.responseText;
-        }
-        onLoad(result);
-      } else {
-        let errDetail = "Upload failed";
-        try {
-          const errRes = JSON.parse(xhr.responseText);
-          errDetail = errRes.detail || errDetail;
-        } catch (err) {}
-        onError(new Error(errDetail));
+  // Storage Endpoints
+  storage: {
+    async getConfig() {
+      return HearthAPI.request("/api/storage/config");
+    },
+
+    async configureMega(email, password) {
+      return HearthAPI.request("/api/storage/config/mega", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
+    }
+  },
+
+  // Folder Endpoints
+  folders: {
+    async getFolders() {
+      return HearthAPI.request("/api/folders");
+    },
+
+    async create(name, parentId = null) {
+      return HearthAPI.request("/api/folders", {
+        method: "POST",
+        body: JSON.stringify({ name, parent_id: parentId })
+      });
+    },
+
+    async rename(folderId, name) {
+      return HearthAPI.request(`/api/folders/${folderId}`, {
+        method: "PUT",
+        body: JSON.stringify({ name })
+      });
+    },
+
+    async delete(folderId) {
+      return HearthAPI.request(`/api/folders/${folderId}`, {
+        method: "DELETE"
+      });
+    }
+  },
+
+  // File Endpoints
+  files: {
+    async getFiles(folderId = null) {
+      let path = "/api/files";
+      if (folderId !== null) {
+        path += `?folder_id=${folderId === "root" ? "root" : folderId}`;
       }
-    };
+      return HearthAPI.request(path);
+    },
 
-    xhr.onerror = () => {
-      onError(new Error("Network connection error during upload."));
-    };
+    async upload(fileObj, folderId = null, onProgress = null) {
+      const formData = new FormData();
+      formData.append("file", fileObj);
+      if (folderId !== null && folderId !== "root") {
+        formData.append("folder_id", folderId);
+      }
 
-    xhr.send(formData);
-    
-    // Return abort function in case we want to cancel the request
-    return () => xhr.abort();
+      // If we need progress, we use standard XMLHttpRequest
+      if (onProgress) {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "/api/files/upload");
+          
+          const token = localStorage.getItem("hearth_token");
+          if (token) {
+            xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+          }
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              onProgress(percent);
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                resolve(JSON.parse(xhr.responseText));
+              } catch (e) {
+                resolve(xhr.responseText);
+              }
+            } else {
+              let errorMsg = "Upload failed";
+              try {
+                const errData = JSON.parse(xhr.responseText);
+                errorMsg = errData.detail || errorMsg;
+              } catch (e) {}
+              reject(new Error(errorMsg));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error("Upload network error"));
+          xhr.send(formData);
+        });
+      }
+
+      return HearthAPI.request("/api/files/upload", {
+        method: "POST",
+        body: formData
+      });
+    },
+
+    async rename(fileId, filename) {
+      return HearthAPI.request(`/api/files/${fileId}`, {
+        method: "PUT",
+        body: JSON.stringify({ filename })
+      });
+    },
+
+    async delete(fileId) {
+      return HearthAPI.request(`/api/files/${fileId}`, {
+        method: "DELETE"
+      });
+    },
+
+    getDownloadUrl(fileId) {
+      return `/api/files/${fileId}/download`;
+    },
+
+    getPreviewUrl(fileId) {
+      return `/api/files/${fileId}/preview`;
+    }
+  },
+
+  // Recycle Bin Endpoints
+  recycleBin: {
+    async get() {
+      return HearthAPI.request("/api/recycle-bin");
+    },
+
+    async restore(itemType, itemId) {
+      return HearthAPI.request(`/api/recycle-bin/${itemType}/${itemId}/restore`, {
+        method: "POST"
+      });
+    },
+
+    async purge(itemType, itemId) {
+      return HearthAPI.request(`/api/recycle-bin/${itemType}/${itemId}/purge`, {
+        method: "DELETE"
+      });
+    }
+  },
+
+  // Search Endpoint
+  search: {
+    async search(params = {}) {
+      const queryParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== "") {
+          queryParams.append(key, params[key]);
+        }
+      });
+      return HearthAPI.request(`/api/search?${queryParams.toString()}`);
+    }
+  },
+
+  // Dashboard Endpoint
+  dashboard: {
+    async getStats() {
+      return HearthAPI.request("/api/dashboard/stats");
+    }
+  },
+
+  // Sharing Endpoints
+  sharing: {
+    async createLink(fileId, password = null, expiresAt = null, maxDownloads = null) {
+      return HearthAPI.request(`/api/files/${fileId}/share`, {
+        method: "POST",
+        body: JSON.stringify({
+          password,
+          expires_at: expiresAt,
+          max_downloads: maxDownloads
+        })
+      });
+    },
+
+    async getLinks(fileId) {
+      return HearthAPI.request(`/api/files/${fileId}/share`);
+    },
+
+    async revokeLink(token) {
+      return HearthAPI.request(`/api/shared/links/${token}`, {
+        method: "DELETE"
+      });
+    },
+
+    // Public Sharing
+    async getPublicInfo(token) {
+      return HearthAPI.request(`/api/shared/${token}`);
+    },
+
+    async downloadPublic(token, password = null) {
+      const headers = {};
+      const bodyObj = password ? { password } : null;
+
+      try {
+        const response = await fetch(`/api/shared/${token}/download`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: bodyObj ? JSON.stringify(bodyObj) : undefined
+        });
+
+        if (!response.ok) {
+          let errorMsg = "Failed to download";
+          try {
+            const errData = await response.json();
+            errorMsg = errData.detail || errorMsg;
+          } catch (e) {}
+          throw new Error(errorMsg);
+        }
+
+        // Trigger browser file download from response stream
+        const blob = await response.blob();
+        const contentDisposition = response.headers.get("Content-Disposition");
+        let filename = "download";
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename="(.+?)"/);
+          if (match && match[1]) {
+            filename = match[1];
+          }
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Public download error:", error);
+        throw error;
+      }
+    }
+  },
+
+  // Global Helpers
+  utils: {
+    formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return "0 Bytes";
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+    },
+
+    formatDate(dateStr) {
+      if (!dateStr) return "";
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    },
+
+    getFileIconClass(fileType, filename) {
+      const ext = filename.split(".").pop().toLowerCase();
+      const mime = fileType ? fileType.toLowerCase() : "";
+
+      if (mime.includes("pdf") || ext === "pdf") {
+        return "file-pdf fas fa-file-pdf";
+      }
+      if (mime.includes("image") || ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) {
+        return "file-image fas fa-file-image";
+      }
+      if (mime.includes("word") || mime.includes("officedocument.word") || ["doc", "docx"].includes(ext)) {
+        return "file-doc fas fa-file-word";
+      }
+      if (mime.includes("sheet") || mime.includes("excel") || mime.includes("officedocument.spreadsheet") || ["xls", "xlsx", "csv"].includes(ext)) {
+        return "file-sheet fas fa-file-excel";
+      }
+      if (mime.includes("text") || ext === "txt") {
+        return "file-text fas fa-file-alt";
+      }
+      return "file-generic fas fa-file";
+    },
+
+    showToast(message, type = "info") {
+      const containerId = "hearth-toast-container";
+      let container = document.getElementById(containerId);
+      
+      if (!container) {
+        container = document.createElement("div");
+        container.id = containerId;
+        container.style.position = "fixed";
+        container.style.bottom = "20px";
+        container.style.right = "20px";
+        container.style.zIndex = "10000";
+        container.style.display = "flex";
+        container.style.flexDirection = "column";
+        container.style.gap = "10px";
+        container.style.maxWidth = "350px";
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement("div");
+      toast.className = `hearth-alert hearth-alert-${type === "error" ? "warning" : type}`;
+      toast.style.margin = "0";
+      toast.style.boxShadow = "0 4px 12px rgba(43, 37, 32, 0.1)";
+      toast.style.animation = "toastEnter 0.25s ease-out";
+      
+      let icon = "fa-info-circle";
+      if (type === "success") icon = "fa-check-circle";
+      if (type === "error") icon = "fa-exclamation-triangle";
+      
+      toast.innerHTML = `
+        <i class="fas ${icon}" style="margin-top: 2px;"></i>
+        <div>${message}</div>
+      `;
+
+      container.appendChild(toast);
+
+      // Auto dismiss
+      setTimeout(() => {
+        toast.style.animation = "toastExit 0.25s ease-in forwards";
+        toast.addEventListener("animationend", () => {
+          toast.remove();
+          if (container.children.length === 0) {
+            container.remove();
+          }
+        });
+      }, 4000);
+    }
   }
 };
+
+// Add toast animation styles to document if not present
+const styleEl = document.createElement("style");
+styleEl.textContent = `
+@keyframes toastEnter {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes toastExit {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(20px); opacity: 0; }
+}
+`;
+document.head.appendChild(styleEl);
