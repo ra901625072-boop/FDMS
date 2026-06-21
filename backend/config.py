@@ -18,6 +18,10 @@ else:
 # Database Settings
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./family_documents.db")
 
+# Fix Render PostgreSQL URL (SQLAlchemy requires postgresql:// instead of postgres://)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # JWT Authentication Settings
 JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-family-document-vault-key-1234567890")
 IS_DEFAULT_JWT_SECRET = JWT_SECRET == "super-secret-family-document-vault-key-1234567890"
