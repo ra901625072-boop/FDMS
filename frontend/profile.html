@@ -66,75 +66,131 @@
         </form>
       </div>
 
-      <!-- Right Column: Family Vault settings / Code Generator -->
-      <div class="famdoc-card">
-        <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
-          <i class="fas fa-key" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Family Secret Code
-        </h2>
+      <!-- Right Column: Settings Stack -->
+      <div style="display: flex; flex-direction: column; gap: 2rem;">
 
-        <!-- State 1: Loading -->
-        <div id="family-loading" style="color: var(--text-ink-muted);">
-          <i class="fas fa-spinner fa-spin"></i> Checking family settings...
-        </div>
+        <!-- Family Secret Code -->
+        <div class="famdoc-card">
+          <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
+            <i class="fas fa-key" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Family Secret Code
+          </h2>
 
-        <!-- State 2: No Family -->
-        <div id="family-none" style="display: none;">
-          <div class="famdoc-alert famdoc-alert-info" style="margin-bottom: 1.5rem;">
-            <i class="fas fa-info-circle"></i>
-            <div>You are not currently linked to any family group. As an administrator, you can initialize a new family vault below.</div>
+          <!-- State 1: Loading -->
+          <div id="family-loading" style="color: var(--text-ink-muted);">
+            <i class="fas fa-spinner fa-spin"></i> Checking family settings...
           </div>
-          <button id="btn-init-family" class="btn btn-primary" style="width: 100%;">
-            <i class="fas fa-plus"></i> Initialize Family Vault & Code
-          </button>
-        </div>
 
-        <!-- State 3: Admin Renders Settings -->
-        <div id="family-admin" style="display: none;">
-          <div style="background-color: var(--bg-linen); border: 1px solid var(--border-paper); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
-            <div style="margin-bottom: 0.5rem;"><strong>Vault Name:</strong> <span id="admin-family-name">—</span></div>
-            <div style="margin-bottom: 0.5rem;"><strong>Max Members:</strong> <span id="admin-family-members">—</span></div>
-            <div><strong>Role:</strong> <span class="badge badge-primary">Administrator</span></div>
-          </div>
-          
-          <p style="font-size: 0.85rem; color: var(--text-ink-muted); margin-bottom: 1.5rem;">
-            You can generate a new family code below. Generating a new code will immediately invalidate any previously generated code for this vault.
-          </p>
-
-          <button id="btn-regen-family-code" class="btn btn-primary" style="width: 100%;">
-            <i class="fas fa-sync-alt"></i> Regenerate Secret Code
-          </button>
-        </div>
-
-        <!-- State 4: Member Renders Settings (Read-Only) -->
-        <div id="family-member" style="display: none;">
-          <div style="background-color: var(--bg-linen); border: 1px solid var(--border-paper); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
-            <div style="margin-bottom: 0.5rem;"><strong>Vault Name:</strong> <span id="member-family-name">—</span></div>
-            <div style="margin-bottom: 0.5rem;"><strong>Max Members:</strong> <span id="member-family-members">—</span></div>
-            <div><strong>Role:</strong> <span class="badge badge-success">Member</span></div>
-          </div>
-          <p style="font-size: 0.85rem; color: var(--text-ink-muted);">
-            Only the family vault administrator can view or regenerate invitation secret codes.
-          </p>
-        </div>
-
-        <!-- Perforated Code Reveal Box -->
-        <div id="ticket-reveal-container" style="display: none; margin-top: 2rem; border-top: 1px solid var(--border-paper); padding-top: 1.5rem;">
-          <div class="ticket-stub" style="width: 100%; border-color: var(--accent-terracotta);">
-            <div>
-              <div class="ticket-label">New Invitation Code</div>
-              <div class="ticket-code" id="revealed-code">XXXX-XXXX</div>
+          <!-- State 2: No Family -->
+          <div id="family-none" style="display: none;">
+            <div class="famdoc-alert famdoc-alert-info" style="margin-bottom: 1.5rem;">
+              <i class="fas fa-info-circle"></i>
+              <div>You are not currently linked to any family group. As an administrator, you can initialize a new family vault below.</div>
             </div>
-            <button class="btn btn-secondary" id="btn-copy-code" title="Copy Code" style="padding: 0.5rem 0.75rem;">
-              <i class="far fa-copy"></i>
-              <span>Copy</span>
+            <button id="btn-init-family" class="btn btn-primary" style="width: 100%;">
+              <i class="fas fa-plus"></i> Initialize Family Vault & Code
             </button>
           </div>
-          <span style="font-size: 0.75rem; color: var(--warning-red); display: block; text-align: center; margin-top: 0.5rem;">
-            Save this code! For safety, it cannot be displayed in plaintext again after you leave this page.
-          </span>
+
+          <!-- State 3: Admin Renders Settings -->
+          <div id="family-admin" style="display: none;">
+            <div style="background-color: var(--bg-linen); border: 1px solid var(--border-paper); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+              <div style="margin-bottom: 0.5rem;"><strong>Vault Name:</strong> <span id="admin-family-name">—</span></div>
+              <div style="margin-bottom: 0.5rem;"><strong>Max Members:</strong> <span id="admin-family-members">—</span></div>
+              <div><strong>Role:</strong> <span class="badge badge-primary">Administrator</span></div>
+            </div>
+            
+            <p style="font-size: 0.85rem; color: var(--text-ink-muted); margin-bottom: 1.5rem;">
+              You can generate a new family code below. Generating a new code will immediately invalidate any previously generated code for this vault.
+            </p>
+
+            <button id="btn-regen-family-code" class="btn btn-primary" style="width: 100%;">
+              <i class="fas fa-sync-alt"></i> Regenerate Secret Code
+            </button>
+          </div>
+
+          <!-- State 4: Member Renders Settings (Read-Only) -->
+          <div id="family-member" style="display: none;">
+            <div style="background-color: var(--bg-linen); border: 1px solid var(--border-paper); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+              <div style="margin-bottom: 0.5rem;"><strong>Vault Name:</strong> <span id="member-family-name">—</span></div>
+              <div style="margin-bottom: 0.5rem;"><strong>Max Members:</strong> <span id="member-family-members">—</span></div>
+              <div><strong>Role:</strong> <span class="badge badge-success">Member</span></div>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-ink-muted);">
+              Only the family vault administrator can view or regenerate invitation secret codes.
+            </p>
+          </div>
+
+          <!-- Perforated Code Reveal Box -->
+          <div id="ticket-reveal-container" style="display: none; margin-top: 2rem; border-top: 1px solid var(--border-paper); padding-top: 1.5rem;">
+            <div class="ticket-stub" style="width: 100%; border-color: var(--accent-terracotta);">
+              <div>
+                <div class="ticket-label">New Invitation Code</div>
+                <div class="ticket-code" id="revealed-code">XXXX-XXXX</div>
+              </div>
+              <button class="btn btn-secondary" id="btn-copy-code" title="Copy Code" style="padding: 0.5rem 0.75rem;">
+                <i class="far fa-copy"></i>
+                <span>Copy</span>
+              </button>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--warning-red); display: block; text-align: center; margin-top: 0.5rem;">
+              Save this code! For safety, it cannot be displayed in plaintext again after you leave this page.
+            </span>
+          </div>
+        </div>
+
+        <!-- Cloud Storage Config Card (Admin Only) -->
+        <div class="famdoc-card" id="storage-setup-card" style="display: none;">
+          <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
+            <i class="fas fa-hdd" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Cloud Storage Config
+          </h2>
+          
+          <div style="background-color: var(--bg-linen); border: 1px solid var(--border-paper); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0.5rem;"><strong>Active Provider:</strong> <span id="storage-active-provider" class="badge badge-primary">local</span></div>
+            <div id="storage-active-detail" style="font-size: 0.85rem; color: var(--text-ink-muted);">—</div>
+          </div>
+
+          <!-- Google Drive Form -->
+          <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-ink);">Google Drive (Primary)</h3>
+            <form id="google-storage-form">
+              <div class="form-group">
+                <label class="form-label" for="google-client-id">Google Client ID (Optional if set in .env)</label>
+                <input type="text" id="google-client-id" class="form-control" placeholder="your-client-id.apps.googleusercontent.com">
+              </div>
+              <div class="form-group" style="margin-top: 1rem;">
+                <label class="form-label" for="google-client-secret">Google Client Secret (Optional if set in .env)</label>
+                <input type="password" id="google-client-secret" class="form-control" placeholder="••••••••">
+              </div>
+              <button type="submit" id="btn-save-google-storage" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                <i class="fab fa-google"></i> Link Google Drive Account
+              </button>
+            </form>
+          </div>
+
+
+          <hr style="border: 0; border-top: 1px solid var(--border-paper); margin: 1.5rem 0;">
+
+          <!-- MEGA Form -->
+          <div>
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-ink);">MEGA Cloud (Fallback / Secondary)</h3>
+            <form id="mega-storage-form">
+              <div class="form-group">
+                <label class="form-label" for="mega-email">MEGA Email</label>
+                <input type="email" id="mega-email" class="form-control" placeholder="email@mega.nz" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="mega-password">MEGA Password</label>
+                <input type="password" id="mega-password" class="form-control" placeholder="••••••••" required>
+              </div>
+              <button type="submit" id="btn-save-mega-storage" class="btn btn-primary" style="width: 100%; margin-top: 0.75rem;">
+                <i class="fas fa-save"></i> Configure MEGA Cloud
+              </button>
+            </form>
+          </div>
         </div>
 
       </div>
+
 
     </div>
 
@@ -185,6 +241,19 @@
     let isRegenerating = false;
 
     document.addEventListener("DOMContentLoaded", () => {
+      // Check for Google OAuth callback parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has("google_auth")) {
+        const authStatus = urlParams.get("google_auth");
+        if (authStatus === "success") {
+          FamDocAPI.utils.showToast("Google Drive connected successfully!", "success");
+        } else if (authStatus === "error") {
+          const detail = urlParams.get("detail") || "Unknown error";
+          FamDocAPI.utils.showToast(`Failed to connect Google Drive: ${detail}`, "error");
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       // Delay slightly for auth check to finish
       setTimeout(async () => {
         const userJson = localStorage.getItem("famdoc_user");
@@ -197,7 +266,14 @@
 
         // Load family details
         await loadFamilyDetails();
+
+        // If admin, load storage config and show storage setup card
+        if (currentUser.role === "admin") {
+          document.getElementById("storage-setup-card").style.display = "block";
+          await loadStorageConfig();
+        }
       }, 50);
+
 
       // Handle profile updates
       document.getElementById("profile-form").addEventListener("submit", async (e) => {
@@ -334,7 +410,84 @@
           submitBtn.textContent = "Generate Code";
         }
       });
+      // Google storage config submit
+      document.getElementById("google-storage-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const clientIdInput = document.getElementById("google-client-id");
+        const clientSecretInput = document.getElementById("google-client-secret");
+        const submitBtn = document.getElementById("btn-save-google-storage");
+        
+        const clientId = clientIdInput.value.trim();
+        const clientSecret = clientSecretInput.value.trim();
+        
+        try {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
+          
+          const result = await FamDocAPI.storage.getGoogleAuthUrl(clientId, clientSecret);
+          if (result && result.url) {
+            window.location.href = result.url;
+          } else {
+            throw new Error("Failed to get authorization URL");
+          }
+        } catch (err) {
+          FamDocAPI.utils.showToast(err.message || "Failed to start Google OAuth process.", "error");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fab fa-google"></i> Link Google Drive Account';
+        }
+      });
+
+      // MEGA storage config submit
+      document.getElementById("mega-storage-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById("mega-email");
+        const passwordInput = document.getElementById("mega-password");
+        const submitBtn = document.getElementById("btn-save-mega-storage");
+        
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        
+        try {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Configuring...';
+          
+          await FamDocAPI.storage.configureMega(email, password);
+          FamDocAPI.utils.showToast("MEGA storage configured successfully!", "success");
+          passwordInput.value = "";
+          await loadStorageConfig();
+        } catch (err) {
+          FamDocAPI.utils.showToast(err.message || "Failed to configure MEGA.", "error");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fas fa-save"></i> Configure MEGA Cloud';
+        }
+      });
     });
+
+    async function loadStorageConfig() {
+      try {
+        const config = await FamDocAPI.storage.getConfig();
+        const activeProviderEl = document.getElementById("storage-active-provider");
+        const activeDetailEl = document.getElementById("storage-active-detail");
+        
+        const provider = config.storage_provider || "local";
+        activeProviderEl.textContent = provider.toUpperCase();
+        
+        if (provider === "google") {
+          activeDetailEl.textContent = `Google Drive connected. Client ID: ${config.client_id || "Not set"}`;
+          document.getElementById("google-client-id").value = config.client_id || "";
+        } else if (provider === "mega") {
+          activeDetailEl.textContent = `Email: ${config.email || "Not set"}`;
+          document.getElementById("mega-email").value = config.email || "";
+        } else {
+          activeDetailEl.textContent = "Currently using local database storage folder.";
+        }
+      } catch (err) {
+        console.error("Failed to load storage config:", err);
+      }
+    }
+
 
     async function loadFamilyDetails() {
       const loadingDiv = document.getElementById("family-loading");

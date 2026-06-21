@@ -82,13 +82,9 @@
 
         FamDocAPI.utils.showToast(`Welcome back, ${user.username}!`, "success");
 
-        // Redirect based on family status
+        // Redirect to dashboard
         setTimeout(() => {
-          if (!user.family_id && user.role === "admin") {
-            window.location.href = "/family-setup.html";
-          } else {
-            window.location.href = "/dashboard.html";
-          }
+          window.location.href = "/dashboard.html";
         }, 800);
       } catch (err) {
         showError(err.message || "Invalid email or password.");

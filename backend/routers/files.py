@@ -13,7 +13,9 @@ from utils.audit import log_action
 import os
 from config import (
     MEGA_EMAIL,
-    MEGA_PASSWORD
+    MEGA_PASSWORD,
+    GOOGLE_SERVICE_ACCOUNT_FILE,
+    GOOGLE_FOLDER_ID
 )
 router = APIRouter(prefix="/api/files", tags=["Files"])
 
@@ -67,23 +69,67 @@ def get_files(
         })
     
     family = db.query(models.Family).filter(models.Family.id == current_user.family_id).first()
-    if family and family.storage_provider == "mega":
-        background_tasks.add_task(sync_local_to_mega, family.id)
+    if family and family.storage_provider in ("google", "mega"):
+        background_tasks.add_task(sync_fallback_to_primary, family.id)
         
     return result
 
 def ensure_family_storage(family: models.Family, db: Session):
+    # 1. Try Google Drive if configured
+    if family.storage_provider == "google" and family.vault_folder_id:
+        return
+        
+    has_google_config = False
+    google_config = {}
+    if family.storage_provider == "google" and family.storage_config and family.storage_config.get("folder_id"):
+        google_config = family.storage_config
+        has_google_config = True
+    elif GOOGLE_FOLDER_ID:
+        google_config = {"folder_id": GOOGLE_FOLDER_ID}
+        has_google_config = True
+        
+    sa_exists = False
+    sa_file = GOOGLE_SERVICE_ACCOUNT_FILE or "service-account.json"
+    if not os.path.isabs(sa_file):
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        sa_file = os.path.join(backend_dir, sa_file)
+    if os.path.exists(sa_file):
+        sa_exists = True
+
+    if has_google_config and sa_exists:
+        try:
+            from storage.google_drive_provider import GoogleDriveProvider
+            provider = GoogleDriveProvider()
+            vault_id = provider.ensure_vault_folder(family.id, google_config)
+            
+            family.storage_provider = "google"
+            family.vault_folder_id = vault_id
+            family.storage_config = google_config
+            db.commit()
+            return
+        except Exception as google_err:
+            print(f"Warning: Failed to initialize Google Drive Provider for family {family.id}: {str(google_err)}")
+
+    # 2. Try Mega if configured
     if family.storage_provider == "mega" and family.vault_folder_id:
         return
         
-    if MEGA_EMAIL and MEGA_PASSWORD:
+    mega_config = {}
+    has_mega_config = False
+    if family.storage_provider == "mega" and family.storage_config and family.storage_config.get("email"):
+        mega_config = family.storage_config
+        has_mega_config = True
+    elif MEGA_EMAIL and MEGA_PASSWORD:
+        mega_config = {
+            "email": MEGA_EMAIL,
+            "password": MEGA_PASSWORD
+        }
+        has_mega_config = True
+
+    if has_mega_config:
         try:
             from storage.mega_provider import MegaProvider
             provider = MegaProvider()
-            mega_config = {
-                "email": MEGA_EMAIL,
-                "password": MEGA_PASSWORD
-            }
             vault_id = provider.ensure_vault_folder(family.id, mega_config)
             
             family.storage_provider = "mega"
@@ -94,10 +140,10 @@ def ensure_family_storage(family: models.Family, db: Session):
         except Exception as mega_err:
             print(f"Warning: Failed to initialize Mega Provider for family {family.id}: {str(mega_err)}")
             
+    # 3. Fallback to Local Storage
     if family.storage_provider == "local" and family.vault_folder_id:
         return
         
-    # Fallback to local storage
     from storage.local import LocalStorageProvider
     local_prov = LocalStorageProvider()
     vault_id = local_prov.ensure_vault_folder(family.id, {})
@@ -107,68 +153,87 @@ def ensure_family_storage(family: models.Family, db: Session):
     family.storage_config = {"vault_folder_id": vault_id}
     db.commit()
 
-def sync_local_to_mega(family_id: str):
+def sync_fallback_to_primary(family_id: str):
     db = SessionLocal()
     try:
         family = db.query(models.Family).filter(models.Family.id == family_id).first()
-        if not family or family.storage_provider != "mega":
+        if not family or family.storage_provider not in ("google", "mega"):
             return
             
-        local_files = db.query(models.File).filter(
+        primary_provider = family.storage_provider
+        
+        non_primary_files = db.query(models.File).filter(
             models.File.family_id == family_id,
-            models.File.storage_provider == "local"
+            models.File.storage_provider != primary_provider,
+            models.File.deleted_at == None
         ).all()
         
-        if not local_files:
+        if not non_primary_files:
             return
             
-        print(f"Background Sync: Found {len(local_files)} local files to sync to MEGA for family {family_id}")
-        from storage.mega_provider import MegaProvider
-        from storage.local import LocalStorageProvider
+        print(f"Background Sync: Found {len(non_primary_files)} files to sync to primary provider '{primary_provider}' for family {family_id}")
+        from storage import get_storage_provider
         
-        mega_prov = MegaProvider()
-        local_prov = LocalStorageProvider()
-        mega_config = family.storage_config
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
-        local_config = {"vault_folder_id": os.path.join(base_dir, family.id)}
-
-        for file in local_files:
+        primary_prov = get_storage_provider(primary_provider)
+        primary_config = get_family_storage_config(family, db)
+        
+        for file in non_primary_files:
             filename = file.filename
             file_id = file.id
-            cloud_file_id = file.cloud_file_id
+            old_provider_name = file.storage_provider
+            old_cloud_file_id = file.cloud_file_id
             
-            # verify it still exists before starting heavy sync
             current_file = db.query(models.File).filter(models.File.id == file_id).first()
-            if not current_file:
+            if not current_file or current_file.deleted_at is not None:
                 continue
 
             try:
-                print(f"Syncing {filename}...")
-                file_bytes = local_prov.download_file(local_config, cloud_file_id)
+                print(f"Syncing {filename} from {old_provider_name} to primary {primary_provider}...")
+                old_prov = get_storage_provider(old_provider_name)
                 
-                upload_result = mega_prov.upload_file(
-                    config=mega_config,
+                if old_provider_name == "local":
+                    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
+                    old_config = {"vault_folder_id": os.path.join(base_dir, family_id)}
+                elif old_provider_name == "mega":
+                    old_config = family.storage_config if family.storage_provider == "mega" else {}
+                    if not old_config.get("email"):
+                        from config import MEGA_EMAIL, MEGA_PASSWORD
+                        old_config = {"email": MEGA_EMAIL, "password": MEGA_PASSWORD}
+                elif old_provider_name == "google":
+                    old_config = family.storage_config if family.storage_provider == "google" else {}
+                    if not old_config.get("folder_id"):
+                        from config import GOOGLE_FOLDER_ID
+                        old_config = {"folder_id": GOOGLE_FOLDER_ID}
+                else:
+                    old_config = {}
+                    
+                file_bytes = old_prov.download_file(old_config, old_cloud_file_id)
+                
+                upload_result = primary_prov.upload_file(
+                    config=primary_config,
                     vault_folder_id=family.vault_folder_id,
                     filename=filename,
                     file_content=file_bytes,
                     mimetype=current_file.file_type
                 )
                 
-                local_prov.delete_file(local_config, cloud_file_id)
+                try:
+                    old_prov.delete_file(old_config, old_cloud_file_id)
+                except Exception as del_err:
+                    print(f"Warning: Failed to delete old copy of {filename} on {old_provider_name}: {str(del_err)}")
                 
-                # Update using query.update to prevent StaleDataError
                 updated = db.query(models.File).filter(models.File.id == file_id).update({
-                    "storage_provider": "mega",
+                    "storage_provider": primary_provider,
                     "cloud_file_id": upload_result["cloud_file_id"],
                     "cloud_link": upload_result.get("cloud_link")
                 })
                 db.commit()
                 
                 if updated == 0:
-                    print(f"File {filename} was deleted concurrently during sync. Cleaning up MEGA copy...")
-                    mega_prov.delete_file(mega_config, upload_result["cloud_file_id"])
+                    print(f"File {filename} was deleted concurrently during sync. Cleaning up primary copy...")
+                    primary_prov.delete_file(primary_config, upload_result["cloud_file_id"])
                 else:
-                    print(f"Successfully synced {filename} to MEGA.")
+                    print(f"Successfully synced {filename} to {primary_provider}.")
             except Exception as e:
                 db.rollback()
                 print(f"Failed to sync {filename}: {str(e)}")
@@ -183,12 +248,40 @@ def get_family_storage_config(family: models.Family, db: Session) -> dict:
     if family.storage_provider == "local":
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
         config = {"vault_folder_id": os.path.join(base_dir, family.id)}
-    if family.storage_provider == "mega":
+    elif family.storage_provider == "mega":
         if MEGA_EMAIL and "email" not in config:
             config["email"] = MEGA_EMAIL
         if MEGA_PASSWORD and "password" not in config:
             config["password"] = MEGA_PASSWORD
+    elif family.storage_provider == "google":
+        if GOOGLE_FOLDER_ID and "folder_id" not in config:
+            config["folder_id"] = GOOGLE_FOLDER_ID
     return config
+
+
+def get_file_storage_config(file: models.File, family: models.Family, db: Session) -> dict:
+    if file.storage_provider == "local":
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
+        return {"vault_folder_id": os.path.join(base_dir, family.id)}
+    elif file.storage_provider == "mega":
+        config = {}
+        if family.storage_provider == "mega" and family.storage_config:
+            config = family.storage_config.copy()
+        if MEGA_EMAIL and "email" not in config:
+            config["email"] = MEGA_EMAIL
+        if MEGA_PASSWORD and "password" not in config:
+            config["password"] = MEGA_PASSWORD
+        return config
+    elif file.storage_provider == "google":
+        config = {}
+        if family.storage_provider == "google" and family.storage_config:
+            config = family.storage_config.copy()
+        if GOOGLE_FOLDER_ID and "folder_id" not in config:
+            config["folder_id"] = GOOGLE_FOLDER_ID
+        return config
+    return {}
+
+
 
 
 @router.post("/upload", response_model=schemas.FileResponse, status_code=status.HTTP_201_CREATED)
@@ -245,41 +338,87 @@ async def upload_file(
         )
 
     # Perform upload via storage provider abstraction
-    used_provider = family.storage_provider
-    try:
-        storage_config = get_family_storage_config(family, db)
-        provider = get_storage_provider(family.storage_provider)
-        upload_result = provider.upload_file(
-            config=storage_config,
-            vault_folder_id=family.vault_folder_id,
-            filename=file.filename,
-            file_content=file_content,
-            mimetype=file.content_type
-        )
-        if used_provider == "mega":
-            background_tasks.add_task(sync_local_to_mega, family.id)
-    except Exception as e:
-        print(f"Warning: Primary storage upload failed: {str(e)}. Falling back to local storage.")
-        from storage.local import LocalStorageProvider
-        local_prov = LocalStorageProvider()
+    providers_cascade = []
+    
+    # 1. Primary provider
+    if family.storage_provider:
+        providers_cascade.append(family.storage_provider)
         
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
-        local_config = {"vault_folder_id": os.path.join(base_dir, family.id)}
-        local_vault_id = local_prov.ensure_vault_folder(family.id, local_config)
+    # 2. Add Google to cascade if not primary and service account exists
+    sa_exists = False
+    sa_file = GOOGLE_SERVICE_ACCOUNT_FILE or "service-account.json"
+    if not os.path.isabs(sa_file):
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        sa_file = os.path.join(backend_dir, sa_file)
+    if os.path.exists(sa_file):
+        sa_exists = True
         
-        upload_result = local_prov.upload_file(
-            config=local_config,
-            vault_folder_id=local_vault_id,
-            filename=file.filename,
-            file_content=file_content,
-            mimetype=file.content_type
+    if "google" not in providers_cascade and sa_exists and (GOOGLE_FOLDER_ID or (family.storage_provider == "google" and family.storage_config and family.storage_config.get("folder_id"))):
+        providers_cascade.append("google")
+        
+    # 3. Add Mega to cascade if not primary and configured
+    if "mega" not in providers_cascade and (MEGA_EMAIL and MEGA_PASSWORD):
+        providers_cascade.append("mega")
+        
+    # 4. Local is always the absolute fallback
+    if "local" not in providers_cascade:
+        providers_cascade.append("local")
+
+    upload_result = None
+    used_provider = None
+    last_error = None
+    
+    for provider_name in providers_cascade:
+        try:
+            if provider_name == family.storage_provider:
+                storage_config = get_family_storage_config(family, db)
+                vault_folder_id = family.vault_folder_id
+            else:
+                if provider_name == "google":
+                    storage_config = family.storage_config if family.storage_provider == "google" else {}
+                    if not storage_config.get("folder_id") and GOOGLE_FOLDER_ID:
+                        storage_config = {"folder_id": GOOGLE_FOLDER_ID}
+                elif provider_name == "mega":
+                    storage_config = family.storage_config if family.storage_provider == "mega" else {}
+                    if not storage_config.get("email") and MEGA_EMAIL:
+                        storage_config = {"email": MEGA_EMAIL, "password": MEGA_PASSWORD}
+                elif provider_name == "local":
+                    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
+                    storage_config = {"vault_folder_id": os.path.join(base_dir, family.id)}
+                else:
+                    storage_config = {}
+                    
+                prov_instance = get_storage_provider(provider_name)
+                vault_folder_id = prov_instance.ensure_vault_folder(family.id, storage_config)
+            
+            prov_instance = get_storage_provider(provider_name)
+            upload_result = prov_instance.upload_file(
+                config=storage_config,
+                vault_folder_id=vault_folder_id,
+                filename=file.filename,
+                file_content=file_content,
+                mimetype=file.content_type
+            )
+            used_provider = provider_name
+            break
+        except Exception as e:
+            print(f"Warning: Upload failed for provider '{provider_name}': {str(e)}")
+            last_error = e
+            
+    if not upload_result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Upload failed across all storage providers. Last error: {str(last_error)}"
         )
-        used_provider = "local"
+        
+    if family.storage_provider in ("google", "mega"):
+        background_tasks.add_task(sync_fallback_to_primary, family.id)
 
     # If Google OAuth token refreshed during the request, update database config
     if "updated_config" in upload_result:
         family.storage_config = upload_result["updated_config"]
         db.commit()
+
 
     # Save metadata in database
     new_file = models.File(
@@ -341,7 +480,7 @@ def download_file(
     
     try:
         provider = get_storage_provider(file.storage_provider)
-        config = get_family_storage_config(family, db)
+        config = get_file_storage_config(file, family, db)
         file_bytes = provider.download_file(config, file.cloud_file_id)
     except Exception as e:
         raise HTTPException(
@@ -381,7 +520,7 @@ def preview_file(
     
     try:
         provider = get_storage_provider(file.storage_provider)
-        config = get_family_storage_config(family, db)
+        config = get_file_storage_config(file, family, db)
         file_bytes = provider.download_file(config, file.cloud_file_id)
     except Exception as e:
         raise HTTPException(
@@ -425,7 +564,7 @@ def rename_file(
     # Rename in the cloud
     try:
         provider = get_storage_provider(file.storage_provider)
-        config = get_family_storage_config(family, db)
+        config = get_file_storage_config(file, family, db)
         provider.rename_file(config, file.cloud_file_id, new_name)
     except Exception as e:
         raise HTTPException(

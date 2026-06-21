@@ -5,7 +5,7 @@ import models
 import schemas
 import auth
 from storage import get_storage_provider
-from routers.files import get_family_storage_config
+from routers.files import get_family_storage_config, get_file_storage_config
 from utils.audit import log_action
 
 router = APIRouter(prefix="/api/recycle-bin", tags=["Recycle Bin"])
@@ -115,23 +115,14 @@ def purge_folder_recursive(folder_id: int, family: models.Family, db: Session):
         
     # 2. Delete files in this folder physically from cloud and DB
     files = db.query(models.File).filter(models.File.folder_id == folder_id).all()
-    if files and family.storage_provider:
+    for file in files:
         try:
-            storage_config = get_family_storage_config(family, db)
-            provider = get_storage_provider(family.storage_provider)
-            for file in files:
-                try:
-                    provider.delete_file(storage_config, file.cloud_file_id)
-                except Exception as e:
-                    print(f"Warning: Failed to delete cloud file {file.cloud_file_id} during purge: {e}")
-                db.delete(file)
+            provider = get_storage_provider(file.storage_provider)
+            config = get_file_storage_config(file, family, db)
+            provider.delete_file(config, file.cloud_file_id)
         except Exception as e:
-            print(f"Warning: Failed to get storage provider: {e}")
-            for file in files:
-                db.delete(file)
-    else:
-        for file in files:
-            db.delete(file)
+            print(f"Warning: Failed to delete cloud file {file.cloud_file_id} on {file.storage_provider} during purge: {e}")
+        db.delete(file)
             
     # 3. Delete folder record
     folder = db.query(models.Folder).filter(models.Folder.id == folder_id).first()
@@ -167,7 +158,7 @@ def purge_item(
         # Delete from cloud
         try:
             provider = get_storage_provider(file.storage_provider)
-            config = get_family_storage_config(family, db)
+            config = get_file_storage_config(file, family, db)
             provider.delete_file(config, file.cloud_file_id)
         except Exception as e:
             print(f"Warning: Failed to delete cloud file {file.cloud_file_id} during purge: {e}")

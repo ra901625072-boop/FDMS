@@ -158,6 +158,13 @@ const FamDocAPI = {
       return FamDocAPI.request("/api/storage/config");
     },
 
+    async getGoogleAuthUrl(clientId, clientSecret) {
+      return FamDocAPI.request("/api/storage/oauth/url", {
+        method: "POST",
+        body: JSON.stringify({ client_id: clientId || null, client_secret: clientSecret || null })
+      });
+    },
+
     async configureMega(email, password) {
       return FamDocAPI.request("/api/storage/config/mega", {
         method: "POST",
@@ -165,6 +172,7 @@ const FamDocAPI = {
       });
     }
   },
+
 
   // Folder Endpoints
   folders: {

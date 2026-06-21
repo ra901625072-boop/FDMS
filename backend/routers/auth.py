@@ -58,6 +58,42 @@ def register(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
     )
     
     db.add(new_user)
+    db.flush()
+
+    # Automatically initialize a family vault for the newly registered admin
+    import secrets
+    import string
+    import hashlib
+    
+    # Generate an ID for the family
+    family_id = "".join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(12))
+    
+    # Generate family secret code
+    alphabet = string.ascii_uppercase + string.digits
+    plaintext_code = "".join(secrets.choice(alphabet) for _ in range(8))
+    hashed_code = auth.get_password_hash(plaintext_code)
+    sha256_hash = hashlib.sha256(plaintext_code.encode("utf-8")).hexdigest()
+    
+    new_family = models.Family(
+        id=family_id,
+        name=f"{new_user.username}'s Family",
+        admin_id=new_user.id,
+        secret_code_hash=hashed_code,
+        secret_code_sha256=sha256_hash,
+        max_members=10,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=7)
+    )
+    db.add(new_family)
+    db.flush()
+    
+    # Add the admin as a family member
+    admin_member = models.FamilyMember(
+        family_id=family_id,
+        user_id=new_user.id,
+        role="admin"
+    )
+    db.add(admin_member)
+    
     db.commit()
     db.refresh(new_user)
     return new_user
@@ -118,15 +154,7 @@ def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Check expiration
-        if family.expires_at:
-            expires_at_aware = family.expires_at.replace(tzinfo=timezone.utc) if family.expires_at.tzinfo is None else family.expires_at
-            if expires_at_aware < datetime.now(timezone.utc):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="The family code has expired. Ask your admin to generate a new one.",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+
 
     access_token = auth.create_access_token(
         data={

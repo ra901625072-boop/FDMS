@@ -4,30 +4,38 @@
 document.addEventListener("DOMContentLoaded", async () => {
   // Determine page type
   const path = window.location.pathname;
-  const isSharedPage = path.includes("shared.html");
-  const isGuestPage = path.includes("index.html") || 
-                      path.includes("login.html") || 
-                      path.includes("register.html") || 
-                      path.includes("join.html") ||
-                      path === "/" ||
-                      path === "";
-
-  const token = localStorage.getItem("famdoc_token");
-
+  
   // Public shared link page doesn't require session redirects
+  const isSharedPage = path.includes("shared.html");
   if (isSharedPage) {
     return;
   }
 
-  if (isGuestPage) {
-    // If logged in, redirect away from guest pages to dashboard
+  // Landing / Home page should show for everyone and not auto-redirect
+  const isLandingPage = path.includes("index.html") || 
+                        path === "/" || 
+                        path === "";
+
+  // Guest-only authentication pages
+  const isGuestAuthPage = path.includes("login.html") || 
+                          path.includes("register.html") || 
+                          path.includes("join.html");
+
+  const token = localStorage.getItem("famdoc_token");
+
+  if (isLandingPage) {
+    return;
+  }
+
+  if (isGuestAuthPage) {
+    // If logged in, redirect away from guest auth pages to dashboard
     if (token) {
       window.location.href = "/dashboard.html";
     }
     return;
   }
 
-  // Auth pages require token
+  // Protected pages require token
   if (!token) {
     window.location.href = "/index.html";
     return;
@@ -46,24 +54,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // Check family setup requirement
-  const isSetupPage = path.includes("family-setup.html");
+  // Check family association requirement
   if (!user.family_id) {
     if (user.role === "admin") {
-      if (!isSetupPage) {
-        window.location.href = "/family-setup.html";
-        return;
+      try {
+        const defaultName = `${user.username}'s Family`;
+        // Create the family vault
+        const result = await FamDocAPI.family.setup(defaultName, 10);
+        // Refresh profile to get the new family ID
+        const freshUser = await FamDocAPI.auth.me();
+        localStorage.setItem("famdoc_user", JSON.stringify(freshUser));
+        FamDocAPI.utils.showToast(`Initialized family vault: ${defaultName}`, "success");
+        // Reload page to reflect the new family setup
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } catch (err) {
+        console.error("Auto family setup failed:", err);
       }
     } else {
       // Members must always belong to a family (registered via code)
       FamDocAPI.utils.showToast("Account error: No family associated.", "error");
       FamDocAPI.auth.logout();
-      return;
-    }
-  } else {
-    // If family is already set up and user goes to setup page, redirect to dashboard
-    if (isSetupPage) {
-      window.location.href = "/dashboard.html";
       return;
     }
   }

@@ -24,6 +24,13 @@ IS_DEFAULT_JWT_SECRET = JWT_SECRET == "super-secret-family-document-vault-key-12
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")) # Default 24 hours
 
+# Google Storage Settings
+GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "service-account.json")
+GOOGLE_FOLDER_ID = os.getenv("GOOGLE_FOLDER_ID", "")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+
+
 # Mega Storage Settings
 MEGA_EMAIL = os.getenv("MEGA_EMAIL", "")
 MEGA_PASSWORD = os.getenv("MEGA_PASSWORD", "")

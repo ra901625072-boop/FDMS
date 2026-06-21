@@ -103,6 +103,13 @@ class FamilyMemberResponse(BaseModel):
 # Storage Configuration Schemas (Legacy/Existing)
 # ==========================================
 
+class StorageSetupGoogle(BaseModel):
+    folder_id: str
+
+class OAuthUrlRequest(BaseModel):
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
+
 class StorageSetupMega(BaseModel):
     email: str
     password: str
@@ -111,6 +118,8 @@ class StorageConfigResponse(BaseModel):
     storage_provider: Optional[str] = None
     is_configured: bool
     email: Optional[str] = None # For mega configuration verification (redacted password)
+    folder_id: Optional[str] = None # For Google Drive configuration verification
+    client_id: Optional[str] = None # For Google OAuth client verification
 
 # ==========================================
 # Folder Schemas (Legacy/Existing)

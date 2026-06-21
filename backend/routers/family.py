@@ -47,7 +47,7 @@ def setup_family(
         secret_code_hash=hashed_code,
         secret_code_sha256=sha256_hash,
         max_members=setup_data.max_members,
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=1)
+        expires_at=datetime.now(timezone.utc) + timedelta(days=7)
     )
     db.add(new_family)
     db.flush()
@@ -147,7 +147,7 @@ def regenerate_family_code(
     family.max_members = setup_data.max_members
     family.secret_code_hash = hashed_code
     family.secret_code_sha256 = sha256_hash
-    family.expires_at = datetime.now(timezone.utc) + timedelta(minutes=1)
+    family.expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     db.commit()
 
     return schemas.FamilySetupResponse(

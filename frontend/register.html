@@ -112,9 +112,9 @@
 
         FamDocAPI.utils.showToast("Account created successfully!", "success");
 
-        // 3. Redirect to Family Setup
+        // 3. Redirect to Dashboard
         setTimeout(() => {
-          window.location.href = "/family-setup.html";
+          window.location.href = "/dashboard.html";
         }, 1000);
       } catch (err) {
         showError(err.message);

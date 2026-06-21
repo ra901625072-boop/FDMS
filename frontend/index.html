@@ -170,5 +170,29 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
+  <script>
+    document.getElementById("btn-login").addEventListener("click", async (e) => {
+      const token = localStorage.getItem("famdoc_token");
+      if (token) {
+        e.preventDefault();
+        const loginBtn = document.getElementById("btn-login");
+        
+        loginBtn.style.pointerEvents = "none";
+        loginBtn.innerHTML = `
+          <i class="fas fa-spinner fa-spin" style="margin-right: 0.25rem;"></i>
+          <span>Verifying...</span>
+        `;
+        
+        try {
+          await FamDocAPI.auth.me();
+          window.location.href = "/dashboard.html";
+        } catch (err) {
+          localStorage.removeItem("famdoc_token");
+          localStorage.removeItem("famdoc_user");
+          window.location.href = "/login.html";
+        }
+      }
+    });
+  </script>
 </body>
 </html>

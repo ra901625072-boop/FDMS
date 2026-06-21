@@ -13,10 +13,15 @@ def get_dashboard_stats(
     db: Session = Depends(get_db)
 ):
     if not current_user.family_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You are not associated with any family group."
-        )
+        return {
+            "total_files": 0,
+            "total_folders": 0,
+            "total_size_bytes": 0,
+            "total_members": 1,
+            "storage_provider": "local",
+            "recent_uploads": [],
+            "recent_activity": []
+        }
 
     # 1. Total files (excluding soft-deleted ones)
     total_files = db.query(models.File).filter(

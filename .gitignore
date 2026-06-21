@@ -24,3 +24,7 @@ backend/scratch/
 .vscode/
 .idea/
 *.swp
+
+# Secrets and Archives
+service-account.json
+*.zip
