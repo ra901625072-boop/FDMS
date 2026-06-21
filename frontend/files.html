@@ -240,31 +240,20 @@
     let currentView = "grid"; // grid or list
     let activeDropdown = null;
     let activePreviewUrl = null;
+    let familyStorageConfig = null;
 
-    // Securely download a file using token authentication header
-    async function downloadFileAuthenticated(fileId, filename) {
-      try {
-        const token = localStorage.getItem("famdoc_token");
-        const response = await fetch(FamDocAPI.files.getDownloadUrl(fileId), {
-          headers: token ? { "Authorization": `Bearer ${token}` } : {}
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to download file");
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      } catch (err) {
-        FamDocAPI.utils.showToast(err.message, "error");
+    function downloadFileAuthenticated(fileId, filename) {
+      const token = localStorage.getItem("famdoc_token");
+      let downloadUrl = FamDocAPI.files.getDownloadUrl(fileId);
+      if (token) {
+        downloadUrl += `?token=${token}`;
       }
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -304,6 +293,13 @@
 
     async function refreshData() {
       try {
+        // Fetch family storage config
+        try {
+          familyStorageConfig = await FamDocAPI.request("/api/storage/config");
+        } catch (storageErr) {
+          console.error("Failed to load storage configuration:", storageErr);
+        }
+
         // Fetch folders
         allFolders = await FamDocAPI.folders.getFolders();
         
@@ -479,13 +475,19 @@
 
         const isList = currentView === "list";
         
+        const isSyncing = familyStorageConfig && 
+                          familyStorageConfig.storage_provider && 
+                          familyStorageConfig.storage_provider !== "local" && 
+                          file.storage_provider === "local";
+        const syncBadge = isSyncing ? '<span class="badge-syncing" title="Syncing to cloud storage in background"><i class="fas fa-sync fa-spin"></i> Syncing</span>' : '';
+
         // Share badge or icon
         const shareIcon = file.is_shared ? '<i class="fas fa-share-alt" style="color: var(--accent-terracotta); margin-left: 0.5rem;" title="Shared publicly"></i>' : '';
 
         const detailsHtml = isList 
           ? `
             <div class="item-details">
-              <div class="item-name" title="${file.filename}">${file.filename}${shareIcon}</div>
+              <div class="item-name" title="${file.filename}">${file.filename}${shareIcon}${syncBadge}</div>
               <div class="item-meta-size">${formattedSize}</div>
               <div class="item-meta-date">${formattedDate.split(',')[0]}</div>
               <div class="item-meta-uploader" title="${file.uploader_email || 'System'}">${file.uploader_email ? file.uploader_email.split('@')[0] : 'System'}</div>
@@ -493,7 +495,7 @@
           `
           : `
             <div class="item-details">
-              <div class="item-name" title="${file.filename}">${file.filename}${shareIcon}</div>
+              <div class="item-name" title="${file.filename}">${file.filename}${shareIcon}${syncBadge}</div>
               <div class="item-meta">${formattedSize}</div>
             </div>
           `;
@@ -745,22 +747,12 @@
       try {
         if (mime.includes("image") || ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) {
           const token = localStorage.getItem("famdoc_token");
-          const res = await fetch(previewUrl, {
-            headers: token ? { "Authorization": `Bearer ${token}` } : {}
-          });
-          if (!res.ok) throw new Error("Failed to load image preview");
-          const blob = await res.blob();
-          activePreviewUrl = URL.createObjectURL(blob);
-          contentArea.innerHTML = `<img src="${activePreviewUrl}" class="preview-image" alt="${file.filename}">`;
+          const authenticatedPreviewUrl = previewUrl + (token ? `?token=${token}` : "");
+          contentArea.innerHTML = `<img src="${authenticatedPreviewUrl}" class="preview-image" alt="${file.filename}">`;
         } else if (mime.includes("pdf") || ext === "pdf") {
           const token = localStorage.getItem("famdoc_token");
-          const res = await fetch(previewUrl, {
-            headers: token ? { "Authorization": `Bearer ${token}` } : {}
-          });
-          if (!res.ok) throw new Error("Failed to load PDF preview");
-          const blob = await res.blob();
-          activePreviewUrl = URL.createObjectURL(blob);
-          contentArea.innerHTML = `<iframe src="${activePreviewUrl}" class="preview-frame"></iframe>`;
+          const authenticatedPreviewUrl = previewUrl + (token ? `?token=${token}` : "");
+          contentArea.innerHTML = `<iframe src="${authenticatedPreviewUrl}" class="preview-frame"></iframe>`;
         } else if (mime.includes("text") || ["txt", "log", "json", "md", "csv"].includes(ext)) {
           const token = localStorage.getItem("famdoc_token");
           const res = await fetch(previewUrl, {

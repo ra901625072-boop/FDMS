@@ -135,6 +135,12 @@ function injectLayout(user) {
         <i class="fas fa-users"></i>
         <span>Family Group</span>
       </a>
+      ${user.role === 'admin' ? `
+      <a href="/storage-config.html" class="nav-item ${isActive('storage-config.html')}">
+        <i class="fas fa-hdd"></i>
+        <span>Storage Config</span>
+      </a>
+      ` : ''}
     </div>
 
     <div class="sidebar-footer">

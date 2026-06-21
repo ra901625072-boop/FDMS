@@ -480,6 +480,21 @@ a:hover {
   color: var(--warning-red);
 }
 
+.badge-syncing {
+  background-color: #FEF8EB;
+  color: #B8823F;
+  border: 1px dashed #B8823F;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
 /* Notifications / Alerts */
 .famdoc-alert {
   padding: 1rem 1.25rem;

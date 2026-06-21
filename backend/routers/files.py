@@ -1,6 +1,6 @@
 import io
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from database import get_db, SessionLocal
@@ -11,6 +11,17 @@ from storage import get_storage_provider
 from sqlalchemy.orm import joinedload
 from utils.audit import log_action
 import os
+import threading
+
+_sync_locks = {}
+_sync_locks_lock = threading.Lock()
+
+def get_sync_lock(family_id: str):
+    with _sync_locks_lock:
+        if family_id not in _sync_locks:
+            _sync_locks[family_id] = threading.Lock()
+        return _sync_locks[family_id]
+
 from config import (
     MEGA_EMAIL,
     MEGA_PASSWORD,
@@ -154,91 +165,98 @@ def ensure_family_storage(family: models.Family, db: Session):
     db.commit()
 
 def sync_fallback_to_primary(family_id: str):
-    db = SessionLocal()
+    lock = get_sync_lock(family_id)
+    if not lock.acquire(blocking=False):
+        print(f"Background Sync: Sync already in progress for family {family_id}, skipping concurrent run.")
+        return
     try:
-        family = db.query(models.Family).filter(models.Family.id == family_id).first()
-        if not family or family.storage_provider not in ("google", "mega"):
-            return
+        db = SessionLocal()
+        try:
+            family = db.query(models.Family).filter(models.Family.id == family_id).first()
+            if not family or family.storage_provider not in ("google", "mega"):
+                return
+                
+            primary_provider = family.storage_provider
             
-        primary_provider = family.storage_provider
-        
-        non_primary_files = db.query(models.File).filter(
-            models.File.family_id == family_id,
-            models.File.storage_provider != primary_provider,
-            models.File.deleted_at == None
-        ).all()
-        
-        if not non_primary_files:
-            return
+            non_primary_files = db.query(models.File).filter(
+                models.File.family_id == family_id,
+                models.File.storage_provider != primary_provider,
+                models.File.deleted_at == None
+            ).all()
             
-        print(f"Background Sync: Found {len(non_primary_files)} files to sync to primary provider '{primary_provider}' for family {family_id}")
-        from storage import get_storage_provider
-        
-        primary_prov = get_storage_provider(primary_provider)
-        primary_config = get_family_storage_config(family, db)
-        
-        for file in non_primary_files:
-            filename = file.filename
-            file_id = file.id
-            old_provider_name = file.storage_provider
-            old_cloud_file_id = file.cloud_file_id
+            if not non_primary_files:
+                return
+                
+            print(f"Background Sync: Found {len(non_primary_files)} files to sync to primary provider '{primary_provider}' for family {family_id}")
+            from storage import get_storage_provider
             
-            current_file = db.query(models.File).filter(models.File.id == file_id).first()
-            if not current_file or current_file.deleted_at is not None:
-                continue
+            primary_prov = get_storage_provider(primary_provider)
+            primary_config = get_family_storage_config(family, db)
+            
+            for file in non_primary_files:
+                filename = file.filename
+                file_id = file.id
+                old_provider_name = file.storage_provider
+                old_cloud_file_id = file.cloud_file_id
+                
+                current_file = db.query(models.File).filter(models.File.id == file_id).first()
+                if not current_file or current_file.deleted_at is not None:
+                    continue
 
-            try:
-                print(f"Syncing {filename} from {old_provider_name} to primary {primary_provider}...")
-                old_prov = get_storage_provider(old_provider_name)
-                
-                if old_provider_name == "local":
-                    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
-                    old_config = {"vault_folder_id": os.path.join(base_dir, family_id)}
-                elif old_provider_name == "mega":
-                    old_config = family.storage_config if family.storage_provider == "mega" else {}
-                    if not old_config.get("email"):
-                        from config import MEGA_EMAIL, MEGA_PASSWORD
-                        old_config = {"email": MEGA_EMAIL, "password": MEGA_PASSWORD}
-                elif old_provider_name == "google":
-                    old_config = family.storage_config if family.storage_provider == "google" else {}
-                    if not old_config.get("folder_id"):
-                        from config import GOOGLE_FOLDER_ID
-                        old_config = {"folder_id": GOOGLE_FOLDER_ID}
-                else:
-                    old_config = {}
-                    
-                file_bytes = old_prov.download_file(old_config, old_cloud_file_id)
-                
-                upload_result = primary_prov.upload_file(
-                    config=primary_config,
-                    vault_folder_id=family.vault_folder_id,
-                    filename=filename,
-                    file_content=file_bytes,
-                    mimetype=current_file.file_type
-                )
-                
                 try:
-                    old_prov.delete_file(old_config, old_cloud_file_id)
-                except Exception as del_err:
-                    print(f"Warning: Failed to delete old copy of {filename} on {old_provider_name}: {str(del_err)}")
-                
-                updated = db.query(models.File).filter(models.File.id == file_id).update({
-                    "storage_provider": primary_provider,
-                    "cloud_file_id": upload_result["cloud_file_id"],
-                    "cloud_link": upload_result.get("cloud_link")
-                })
-                db.commit()
-                
-                if updated == 0:
-                    print(f"File {filename} was deleted concurrently during sync. Cleaning up primary copy...")
-                    primary_prov.delete_file(primary_config, upload_result["cloud_file_id"])
-                else:
-                    print(f"Successfully synced {filename} to {primary_provider}.")
-            except Exception as e:
-                db.rollback()
-                print(f"Failed to sync {filename}: {str(e)}")
+                    print(f"Syncing {filename} from {old_provider_name} to primary {primary_provider}...")
+                    old_prov = get_storage_provider(old_provider_name)
+                    
+                    if old_provider_name == "local":
+                        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "local_vault"))
+                        old_config = {"vault_folder_id": os.path.join(base_dir, family_id)}
+                    elif old_provider_name == "mega":
+                        old_config = family.storage_config if family.storage_provider == "mega" else {}
+                        if not old_config.get("email"):
+                            from config import MEGA_EMAIL, MEGA_PASSWORD
+                            old_config = {"email": MEGA_EMAIL, "password": MEGA_PASSWORD}
+                    elif old_provider_name == "google":
+                        old_config = family.storage_config if family.storage_provider == "google" else {}
+                        if not old_config.get("folder_id"):
+                            from config import GOOGLE_FOLDER_ID
+                            old_config = {"folder_id": GOOGLE_FOLDER_ID}
+                    else:
+                        old_config = {}
+                        
+                    file_bytes = old_prov.download_file(old_config, old_cloud_file_id)
+                    
+                    upload_result = primary_prov.upload_file(
+                        config=primary_config,
+                        vault_folder_id=family.vault_folder_id,
+                        filename=filename,
+                        file_content=file_bytes,
+                        mimetype=current_file.file_type
+                    )
+                    
+                    try:
+                        old_prov.delete_file(old_config, old_cloud_file_id)
+                    except Exception as del_err:
+                        print(f"Warning: Failed to delete old copy of {filename} on {old_provider_name}: {str(del_err)}")
+                    
+                    updated = db.query(models.File).filter(models.File.id == file_id).update({
+                        "storage_provider": primary_provider,
+                        "cloud_file_id": upload_result["cloud_file_id"],
+                        "cloud_link": upload_result.get("cloud_link")
+                    })
+                    db.commit()
+                    
+                    if updated == 0:
+                        print(f"File {filename} was deleted concurrently during sync. Cleaning up primary copy...")
+                        primary_prov.delete_file(primary_config, upload_result["cloud_file_id"])
+                    else:
+                        print(f"Successfully synced {filename} to {primary_provider}.")
+                except Exception as e:
+                    db.rollback()
+                    print(f"Failed to sync {filename}: {str(e)}")
+        finally:
+            db.close()
     finally:
-        db.close()
+        lock.release()
 
 
 def get_family_storage_config(family: models.Family, db: Session) -> dict:
@@ -337,14 +355,15 @@ async def upload_file(
             detail="Security error: Upload blocked. The file matches a known malware signature."
         )
 
-    # Perform upload via storage provider abstraction
-    providers_cascade = []
+    # Perform upload via storage provider abstraction. To ensure uploads are fast,
+    # we always upload to 'local' storage first, and then sync to the primary cloud
+    # provider ('google' or 'mega') in the background if configured.
+    providers_cascade = ["local"]
     
-    # 1. Primary provider
-    if family.storage_provider:
+    # Fallback to configured primary provider or other cloud providers if local storage fails.
+    if family.storage_provider and family.storage_provider != "local":
         providers_cascade.append(family.storage_provider)
         
-    # 2. Add Google to cascade if not primary and service account exists
     sa_exists = False
     sa_file = GOOGLE_SERVICE_ACCOUNT_FILE or "service-account.json"
     if not os.path.isabs(sa_file):
@@ -356,13 +375,8 @@ async def upload_file(
     if "google" not in providers_cascade and sa_exists and (GOOGLE_FOLDER_ID or (family.storage_provider == "google" and family.storage_config and family.storage_config.get("folder_id"))):
         providers_cascade.append("google")
         
-    # 3. Add Mega to cascade if not primary and configured
     if "mega" not in providers_cascade and (MEGA_EMAIL and MEGA_PASSWORD):
         providers_cascade.append("mega")
-        
-    # 4. Local is always the absolute fallback
-    if "local" not in providers_cascade:
-        providers_cascade.append("local")
 
     upload_result = None
     used_provider = None
@@ -411,7 +425,7 @@ async def upload_file(
             detail=f"Upload failed across all storage providers. Last error: {str(last_error)}"
         )
         
-    if family.storage_provider in ("google", "mega"):
+    if family.storage_provider in ("google", "mega") and used_provider != family.storage_provider:
         background_tasks.add_task(sync_fallback_to_primary, family.id)
 
     # If Google OAuth token refreshed during the request, update database config
@@ -478,6 +492,18 @@ def download_file(
     ip = request.client.host if request.client else "127.0.0.1"
     log_action(db, "DOWNLOAD_FILE", current_user.id, current_user.family_id, ip, f"Downloaded file: {file.filename}")
     
+    # Try to get direct redirect download URL for cloud providers
+    if file.storage_provider in ("google", "mega"):
+        try:
+            provider = get_storage_provider(file.storage_provider)
+            config = get_file_storage_config(file, family, db)
+            if hasattr(provider, "get_direct_download_url"):
+                direct_url = provider.get_direct_download_url(config, file.cloud_file_id)
+                if direct_url:
+                    return RedirectResponse(url=direct_url)
+        except Exception as e:
+            print(f"Warning: Failed to get direct download URL: {str(e)}. Falling back to streaming.")
+
     try:
         provider = get_storage_provider(file.storage_provider)
         config = get_file_storage_config(file, family, db)
@@ -518,6 +544,8 @@ def preview_file(
     ip = request.client.host if request.client else "127.0.0.1"
     log_action(db, "PREVIEW_FILE", current_user.id, current_user.family_id, ip, f"Previewed file: {file.filename}")
     
+
+
     try:
         provider = get_storage_provider(file.storage_provider)
         config = get_file_storage_config(file, family, db)

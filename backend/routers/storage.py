@@ -136,7 +136,7 @@ def oauth2callback(
     
     r = requests.post("https://oauth2.googleapis.com/token", data=payload)
     if r.status_code != 200:
-        return RedirectResponse(url=f"{FRONTEND_URL.rstrip('/')}/profile.html?google_auth=error&detail={urllib.parse.quote(r.text)}")
+        return RedirectResponse(url=f"{FRONTEND_URL.rstrip('/')}/storage-config.html?google_auth=error&detail={urllib.parse.quote(r.text)}")
         
     res = r.json()
     access_token = res.get("access_token")
@@ -147,7 +147,7 @@ def oauth2callback(
         refresh_token = config.get("refresh_token")
         if not refresh_token:
             return RedirectResponse(
-                url=f"{FRONTEND_URL.rstrip('/')}/profile.html?google_auth=error&detail=" + 
+                url=f"{FRONTEND_URL.rstrip('/')}/storage-config.html?google_auth=error&detail=" + 
                     urllib.parse.quote("No refresh token returned. Please remove application access from your Google account settings and try again.")
             )
             
@@ -164,14 +164,14 @@ def oauth2callback(
         provider = get_storage_provider("google")
         vault_id = provider.ensure_vault_folder(family.id, active_config)
     except Exception as err:
-        return RedirectResponse(url=f"{FRONTEND_URL.rstrip('/')}/profile.html?google_auth=error&detail={urllib.parse.quote(str(err))}")
+        return RedirectResponse(url=f"{FRONTEND_URL.rstrip('/')}/storage-config.html?google_auth=error&detail={urllib.parse.quote(str(err))}")
         
     family.storage_provider = "google"
     family.storage_config = active_config
     family.vault_folder_id = vault_id
     db.commit()
     
-    return RedirectResponse(url=f"{FRONTEND_URL.rstrip('/')}/profile.html?google_auth=success")
+    return RedirectResponse(url=f"{FRONTEND_URL.rstrip('/')}/storage-config.html?google_auth=success")
 
 
 

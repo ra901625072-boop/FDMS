@@ -138,57 +138,6 @@
           </div>
         </div>
 
-        <!-- Cloud Storage Config Card (Admin Only) -->
-        <div class="famdoc-card" id="storage-setup-card" style="display: none;">
-          <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
-            <i class="fas fa-hdd" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Cloud Storage Config
-          </h2>
-          
-          <div style="background-color: var(--bg-linen); border: 1px solid var(--border-paper); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
-            <div style="margin-bottom: 0.5rem;"><strong>Active Provider:</strong> <span id="storage-active-provider" class="badge badge-primary">local</span></div>
-            <div id="storage-active-detail" style="font-size: 0.85rem; color: var(--text-ink-muted);">—</div>
-          </div>
-
-          <!-- Google Drive Form -->
-          <div style="margin-bottom: 1.5rem;">
-            <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-ink);">Google Drive (Primary)</h3>
-            <form id="google-storage-form">
-              <div class="form-group">
-                <label class="form-label" for="google-client-id">Google Client ID (Optional if set in .env)</label>
-                <input type="text" id="google-client-id" class="form-control" placeholder="your-client-id.apps.googleusercontent.com">
-              </div>
-              <div class="form-group" style="margin-top: 1rem;">
-                <label class="form-label" for="google-client-secret">Google Client Secret (Optional if set in .env)</label>
-                <input type="password" id="google-client-secret" class="form-control" placeholder="••••••••">
-              </div>
-              <button type="submit" id="btn-save-google-storage" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                <i class="fab fa-google"></i> Link Google Drive Account
-              </button>
-            </form>
-          </div>
-
-
-          <hr style="border: 0; border-top: 1px solid var(--border-paper); margin: 1.5rem 0;">
-
-          <!-- MEGA Form -->
-          <div>
-            <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-ink);">MEGA Cloud (Fallback / Secondary)</h3>
-            <form id="mega-storage-form">
-              <div class="form-group">
-                <label class="form-label" for="mega-email">MEGA Email</label>
-                <input type="email" id="mega-email" class="form-control" placeholder="email@mega.nz" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="mega-password">MEGA Password</label>
-                <input type="password" id="mega-password" class="form-control" placeholder="••••••••" required>
-              </div>
-              <button type="submit" id="btn-save-mega-storage" class="btn btn-primary" style="width: 100%; margin-top: 0.75rem;">
-                <i class="fas fa-save"></i> Configure MEGA Cloud
-              </button>
-            </form>
-          </div>
-        </div>
-
       </div>
 
 
@@ -241,19 +190,6 @@
     let isRegenerating = false;
 
     document.addEventListener("DOMContentLoaded", () => {
-      // Check for Google OAuth callback parameters
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has("google_auth")) {
-        const authStatus = urlParams.get("google_auth");
-        if (authStatus === "success") {
-          FamDocAPI.utils.showToast("Google Drive connected successfully!", "success");
-        } else if (authStatus === "error") {
-          const detail = urlParams.get("detail") || "Unknown error";
-          FamDocAPI.utils.showToast(`Failed to connect Google Drive: ${detail}`, "error");
-        }
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
       // Delay slightly for auth check to finish
       setTimeout(async () => {
         const userJson = localStorage.getItem("famdoc_user");
@@ -266,12 +202,6 @@
 
         // Load family details
         await loadFamilyDetails();
-
-        // If admin, load storage config and show storage setup card
-        if (currentUser.role === "admin") {
-          document.getElementById("storage-setup-card").style.display = "block";
-          await loadStorageConfig();
-        }
       }, 50);
 
 
@@ -410,83 +340,7 @@
           submitBtn.textContent = "Generate Code";
         }
       });
-      // Google storage config submit
-      document.getElementById("google-storage-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const clientIdInput = document.getElementById("google-client-id");
-        const clientSecretInput = document.getElementById("google-client-secret");
-        const submitBtn = document.getElementById("btn-save-google-storage");
-        
-        const clientId = clientIdInput.value.trim();
-        const clientSecret = clientSecretInput.value.trim();
-        
-        try {
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
-          
-          const result = await FamDocAPI.storage.getGoogleAuthUrl(clientId, clientSecret);
-          if (result && result.url) {
-            window.location.href = result.url;
-          } else {
-            throw new Error("Failed to get authorization URL");
-          }
-        } catch (err) {
-          FamDocAPI.utils.showToast(err.message || "Failed to start Google OAuth process.", "error");
-        } finally {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i class="fab fa-google"></i> Link Google Drive Account';
-        }
-      });
-
-      // MEGA storage config submit
-      document.getElementById("mega-storage-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const emailInput = document.getElementById("mega-email");
-        const passwordInput = document.getElementById("mega-password");
-        const submitBtn = document.getElementById("btn-save-mega-storage");
-        
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
-        
-        try {
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Configuring...';
-          
-          await FamDocAPI.storage.configureMega(email, password);
-          FamDocAPI.utils.showToast("MEGA storage configured successfully!", "success");
-          passwordInput.value = "";
-          await loadStorageConfig();
-        } catch (err) {
-          FamDocAPI.utils.showToast(err.message || "Failed to configure MEGA.", "error");
-        } finally {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i class="fas fa-save"></i> Configure MEGA Cloud';
-        }
-      });
     });
-
-    async function loadStorageConfig() {
-      try {
-        const config = await FamDocAPI.storage.getConfig();
-        const activeProviderEl = document.getElementById("storage-active-provider");
-        const activeDetailEl = document.getElementById("storage-active-detail");
-        
-        const provider = config.storage_provider || "local";
-        activeProviderEl.textContent = provider.toUpperCase();
-        
-        if (provider === "google") {
-          activeDetailEl.textContent = `Google Drive connected. Client ID: ${config.client_id || "Not set"}`;
-          document.getElementById("google-client-id").value = config.client_id || "";
-        } else if (provider === "mega") {
-          activeDetailEl.textContent = `Email: ${config.email || "Not set"}`;
-          document.getElementById("mega-email").value = config.email || "";
-        } else {
-          activeDetailEl.textContent = "Currently using local database storage folder.";
-        }
-      } catch (err) {
-        console.error("Failed to load storage config:", err);
-      }
-    }
 
 
     async function loadFamilyDetails() {
