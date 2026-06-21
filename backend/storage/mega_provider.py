@@ -53,13 +53,9 @@ class MegaProvider(StorageProvider):
                 return node_id
                 
         # Create folder if it doesn't exist (with retries)
-        from tenacity import Retrying, stop_after_attempt, wait_exponential
+        from storage.base import SimpleRetry
         res = None
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 res = client.create_folder(folder_name)
         node_id = res.get(folder_name)
@@ -86,13 +82,9 @@ class MegaProvider(StorageProvider):
                 f.write(file_content)
                 
             # Perform upload (with retries)
-            from tenacity import Retrying, stop_after_attempt, wait_exponential
+            from storage.base import SimpleRetry
             uploaded_file = None
-            for attempt in Retrying(
-                stop=stop_after_attempt(3),
-                wait=wait_exponential(multiplier=1, min=1, max=5),
-                reraise=True
-            ):
+            for attempt in SimpleRetry(attempts=3, wait=1):
                 with attempt:
                     uploaded_file = client.upload(temp_file_path, vault_folder_id)
             
@@ -147,13 +139,9 @@ class MegaProvider(StorageProvider):
         file_obj = (cloud_file_id, file_info)
         temp_dir = tempfile.mkdtemp()
         try:
-            from tenacity import Retrying, stop_after_attempt, wait_exponential
+            from storage.base import SimpleRetry
             try:
-                for attempt in Retrying(
-                    stop=stop_after_attempt(3),
-                    wait=wait_exponential(multiplier=1, min=1, max=5),
-                    reraise=True
-                ):
+                for attempt in SimpleRetry(attempts=3, wait=1):
                     with attempt:
                         client.download(file_obj, temp_dir)
             except PermissionError as e:
@@ -190,12 +178,8 @@ class MegaProvider(StorageProvider):
             return True # Already deleted
             
         file_obj = (cloud_file_id, file_info)
-        from tenacity import Retrying, stop_after_attempt, wait_exponential
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        from storage.base import SimpleRetry
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 client.destroy(file_obj)
         return True
@@ -208,12 +192,8 @@ class MegaProvider(StorageProvider):
             raise Exception("File not found in Mega cloud to rename")
             
         file_obj = (cloud_file_id, file_info)
-        from tenacity import Retrying, stop_after_attempt, wait_exponential
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        from storage.base import SimpleRetry
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 client.rename(file_obj, new_name)
         return True

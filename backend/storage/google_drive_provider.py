@@ -86,13 +86,9 @@ class GoogleDriveProvider(StorageProvider):
         else:
             query = f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}' and trashed = false"
         
-        from tenacity import Retrying, stop_after_attempt, wait_exponential
+        from storage.base import SimpleRetry
         results = None
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 results = service.files().list(
                     q=query,
@@ -116,11 +112,7 @@ class GoogleDriveProvider(StorageProvider):
             file_metadata['parents'] = [parent_id]
         
         new_folder = None
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 new_folder = service.files().create(body=file_metadata, fields='id', supportsAllDrives=True).execute()
                 
@@ -136,13 +128,9 @@ class GoogleDriveProvider(StorageProvider):
         
         media = MediaIoBaseUpload(io.BytesIO(file_content), mimetype=mimetype, resumable=True)
         
-        from tenacity import Retrying, stop_after_attempt, wait_exponential
+        from storage.base import SimpleRetry
         uploaded_file = None
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 uploaded_file = service.files().create(
                     body=file_metadata,
@@ -166,12 +154,8 @@ class GoogleDriveProvider(StorageProvider):
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
         
-        from tenacity import Retrying, stop_after_attempt, wait_exponential
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        from storage.base import SimpleRetry
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 fh.seek(0)
                 fh.truncate(0)
@@ -185,12 +169,8 @@ class GoogleDriveProvider(StorageProvider):
     def delete_file(self, config: dict, cloud_file_id: str) -> bool:
         service = self._get_client(config)
         
-        from tenacity import Retrying, stop_after_attempt, wait_exponential
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        from storage.base import SimpleRetry
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 try:
                     service.files().delete(fileId=cloud_file_id, supportsAllDrives=True).execute()
@@ -207,12 +187,8 @@ class GoogleDriveProvider(StorageProvider):
             'name': new_name
         }
         
-        from tenacity import Retrying, stop_after_attempt, wait_exponential
-        for attempt in Retrying(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=5),
-            reraise=True
-        ):
+        from storage.base import SimpleRetry
+        for attempt in SimpleRetry(attempts=3, wait=1):
             with attempt:
                 service.files().update(
                     fileId=cloud_file_id,

@@ -57,3 +57,29 @@ class StorageProvider(ABC):
         Returns None if direct URL is not supported or cannot be generated.
         """
         return None
+
+
+import time
+
+class SimpleRetry:
+    def __init__(self, attempts=3, wait=1):
+        self.attempts = attempts
+        self.wait = wait
+
+    def __iter__(self):
+        class Attempt:
+            def __init__(self, parent, attempt_num):
+                self.parent = parent
+                self.attempt_num = attempt_num
+            def __enter__(self): return self
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                if exc_type is not None:
+                    if self.attempt_num >= self.parent.attempts - 1:
+                        return False
+                    time.sleep(self.parent.wait)
+                    return True
+                return False
+        
+        for i in range(self.attempts):
+            yield Attempt(self, i)
+
