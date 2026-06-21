@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # App Settings
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8000")
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
+BACKEND_URL = os.getenv("BACKEND_URL", RENDER_EXTERNAL_URL or "http://localhost:8000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", RENDER_EXTERNAL_URL or "http://localhost:8000")
 
 # CORS Origins Setup
 cors_origins_raw = os.getenv("CORS_ORIGINS", "")
