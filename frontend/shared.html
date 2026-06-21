@@ -12,7 +12,7 @@
 <body>
   
   <div class="guest-wrapper">
-    <div class="famdoc-card shared-layout">
+    <div class="famdoc-card shared-layout fd-page-enter">
       
       <!-- Logo header -->
       <div style="text-align: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border-paper); padding-bottom: 1rem;">
@@ -24,9 +24,15 @@
       </div>
 
       <!-- Loading State -->
-      <div id="shared-loading" style="text-align: center; padding: 2rem 0;">
-        <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--accent-terracotta); margin-bottom: 1rem;"></i>
-        <p style="color: var(--text-ink-muted);">Retrieving shared file details...</p>
+      <div id="shared-loading" style="padding: 1rem 0;">
+        <div class="shared-file-info" style="border: 1px solid var(--border-paper); background-color: var(--bg-linen); display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+          <div class="fd-skel fd-skel-circle" style="width: 2.5rem; height: 2.5rem;"></div>
+          <div class="shared-file-details" style="flex: 1; display: flex; flex-direction: column; gap: 0.35rem;">
+            <div class="fd-skel fd-skel-text lg" style="height: 14px; width: 85%;"></div>
+            <div class="fd-skel fd-skel-text md" style="height: 10px; width: 30%;"></div>
+          </div>
+        </div>
+        <div class="fd-skel fd-skel-block" style="height: 46px; width: 100%;"></div>
       </div>
 
       <!-- Error State -->
@@ -98,6 +104,7 @@
         const info = await FamDocAPI.sharing.getPublicInfo(linkToken);
         
         loading.style.display = "none";
+        content.classList.add("fd-fade-in");
         content.style.display = "block";
 
         // Set metadata
@@ -164,6 +171,7 @@
       
       const errorDiv = document.getElementById("shared-error");
       document.getElementById("error-desc").textContent = msg;
+      errorDiv.classList.add("fd-fade-in");
       errorDiv.style.display = "block";
     }
   </script>

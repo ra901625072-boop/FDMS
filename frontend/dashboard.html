@@ -22,20 +22,20 @@
 
     <!-- Dashboard Statistics Grid -->
     <div class="dashboard-grid">
-      <div class="famdoc-card stat-card">
+      <div class="famdoc-card stat-card fd-fade-up fd-stagger" style="--fd-delay: 0.05s;">
         <i class="fas fa-file-alt stat-icon"></i>
         <div class="stat-label">Total Files</div>
-        <div class="stat-val" id="stat-files">0</div>
+        <div class="stat-val" id="stat-files"><span class="fd-skel" style="width: 50px; height: 30px; border-radius: 4px;"></span></div>
       </div>
-      <div class="famdoc-card stat-card">
+      <div class="famdoc-card stat-card fd-fade-up fd-stagger" style="--fd-delay: 0.1s;">
         <i class="fas fa-database stat-icon"></i>
         <div class="stat-label">Space Occupied</div>
-        <div class="stat-val" id="stat-size">0 Bytes</div>
+        <div class="stat-val" id="stat-size"><span class="fd-skel" style="width: 100px; height: 30px; border-radius: 4px;"></span></div>
       </div>
-      <div class="famdoc-card stat-card">
+      <div class="famdoc-card stat-card fd-fade-up fd-stagger" style="--fd-delay: 0.15s;">
         <i class="fas fa-users stat-icon"></i>
         <div class="stat-label">Family Members</div>
-        <div class="stat-val" id="stat-members">0</div>
+        <div class="stat-val" id="stat-members"><span class="fd-skel" style="width: 40px; height: 30px; border-radius: 4px;"></span></div>
       </div>
     </div>
 
@@ -49,11 +49,32 @@
         </div>
         
         <div id="recent-uploads-list" class="items-list">
-          <!-- Populated dynamically -->
-          <div class="empty-state" style="padding: 2rem 0;">
-            <i class="fas fa-folder-open empty-state-icon" style="font-size: 2.5rem;"></i>
-            <h4 class="empty-state-title">No files uploaded yet</h4>
-            <p class="empty-state-text">Head over to the Shared Vault to add family files.</p>
+          <!-- Skeleton Loading State -->
+          <div class="fd-skel-uploads-placeholder">
+            <div class="vault-item" style="padding: 0.75rem 1rem; gap: 0.75rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem;">
+              <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+              <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 1rem; align-items: center; width: 100%;">
+                <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text md" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text sm" style="height: 12px;"></div>
+              </div>
+            </div>
+            <div class="vault-item" style="padding: 0.75rem 1rem; gap: 0.75rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem;">
+              <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+              <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 1rem; align-items: center; width: 100%;">
+                <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text md" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text sm" style="height: 12px;"></div>
+              </div>
+            </div>
+            <div class="vault-item" style="padding: 0.75rem 1rem; gap: 0.75rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9;">
+              <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+              <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1.2fr; gap: 1rem; align-items: center; width: 100%;">
+                <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text md" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text sm" style="height: 12px;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -65,11 +86,29 @@
         </div>
         
         <div id="activity-feed-list" class="activity-feed">
-          <!-- Populated dynamically -->
-          <div class="empty-state" style="padding: 2rem 0;">
-            <i class="fas fa-stream empty-state-icon" style="font-size: 2.5rem;"></i>
-            <h4 class="empty-state-title">No recent activity</h4>
-            <p class="empty-state-text">Actions like uploads or deletes will appear here.</p>
+          <!-- Skeleton Loading State -->
+          <div class="fd-skel-activity-placeholder">
+            <div class="activity-item" style="border-bottom: 1px solid var(--border-paper); padding-bottom: 0.75rem; display: flex; gap: 0.75rem;">
+              <div class="activity-icon fd-skel fd-skel-circle" style="width: 28px; height: 28px;"></div>
+              <div class="activity-details" style="flex: 1; display: flex; flex-direction: column; gap: 0.35rem;">
+                <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text md" style="height: 10px; width: 40%;"></div>
+              </div>
+            </div>
+            <div class="activity-item" style="border-bottom: 1px solid var(--border-paper); padding-bottom: 0.75rem; display: flex; gap: 0.75rem;">
+              <div class="activity-icon fd-skel fd-skel-circle" style="width: 28px; height: 28px;"></div>
+              <div class="activity-details" style="flex: 1; display: flex; flex-direction: column; gap: 0.35rem;">
+                <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text md" style="height: 10px; width: 30%;"></div>
+              </div>
+            </div>
+            <div class="activity-item" style="display: flex; gap: 0.75rem;">
+              <div class="activity-icon fd-skel fd-skel-circle" style="width: 28px; height: 28px;"></div>
+              <div class="activity-details" style="flex: 1; display: flex; flex-direction: column; gap: 0.35rem;">
+                <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+                <div class="fd-skel fd-skel-text md" style="height: 10px; width: 50%;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -109,11 +148,12 @@
           const recentList = document.getElementById("recent-uploads-list");
           if (stats.recent_uploads && stats.recent_uploads.length > 0) {
             recentList.innerHTML = "";
-            stats.recent_uploads.forEach(file => {
+            stats.recent_uploads.forEach((file, index) => {
               const fileCard = document.createElement("div");
-              fileCard.className = "vault-item";
+              fileCard.className = "vault-item fd-fade-up fd-stagger";
               fileCard.style.padding = "0.75rem 1rem";
               fileCard.style.gap = "0.75rem";
+              fileCard.style.setProperty("--fd-delay", `${index * 0.05}s`);
               
               // Open preview on double click
               fileCard.addEventListener("dblclick", () => {
@@ -134,15 +174,24 @@
               `;
               recentList.appendChild(fileCard);
             });
+          } else {
+            recentList.innerHTML = `
+              <div class="empty-state fd-fade-in" style="padding: 2rem 0;">
+                <i class="fas fa-folder-open empty-state-icon" style="font-size: 2.5rem;"></i>
+                <h4 class="empty-state-title">No files uploaded yet</h4>
+                <p class="empty-state-text">Head over to the Shared Vault to add family files.</p>
+              </div>
+            `;
           }
 
           // Populate Activity logs
           const activityFeed = document.getElementById("activity-feed-list");
           if (stats.recent_activity && stats.recent_activity.length > 0) {
             activityFeed.innerHTML = "";
-            stats.recent_activity.forEach(log => {
+            stats.recent_activity.forEach((log, index) => {
               const activityItem = document.createElement("div");
-              activityItem.className = "activity-item";
+              activityItem.className = "activity-item fd-fade-up fd-stagger";
+              activityItem.style.setProperty("--fd-delay", `${index * 0.05}s`);
               
               // Map actions to icons
               let actionIcon = "fa-info-circle";
@@ -165,11 +214,36 @@
               `;
               activityFeed.appendChild(activityItem);
             });
+          } else {
+            activityFeed.innerHTML = `
+              <div class="empty-state fd-fade-in" style="padding: 2rem 0;">
+                <i class="fas fa-stream empty-state-icon" style="font-size: 2.5rem;"></i>
+                <h4 class="empty-state-title">No recent activity</h4>
+                <p class="empty-state-text">Actions like uploads or deletes will appear here.</p>
+              </div>
+            `;
           }
 
         } catch (err) {
           console.error("Dashboard failed to load data:", err);
           FamDocAPI.utils.showToast("Failed to retrieve dashboard statistics.", "error");
+          
+          // Hide skeletons on error
+          document.getElementById("stat-files").textContent = "—";
+          document.getElementById("stat-size").textContent = "—";
+          document.getElementById("stat-members").textContent = "—";
+          document.getElementById("recent-uploads-list").innerHTML = `
+            <div class="empty-state fd-fade-in" style="padding: 2rem 0; color: var(--warning-red);">
+              <i class="fas fa-exclamation-triangle empty-state-icon" style="font-size: 2.5rem; color: var(--warning-red);"></i>
+              <h4 class="empty-state-title">Failed to load files</h4>
+            </div>
+          `;
+          document.getElementById("activity-feed-list").innerHTML = `
+            <div class="empty-state fd-fade-in" style="padding: 2rem 0; color: var(--warning-red);">
+              <i class="fas fa-exclamation-triangle empty-state-icon" style="font-size: 2.5rem; color: var(--warning-red);"></i>
+              <h4 class="empty-state-title">Failed to load activity</h4>
+            </div>
+          `;
         }
       }, 50);
     });

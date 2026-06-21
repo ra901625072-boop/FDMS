@@ -10,7 +10,7 @@
 </head>
 <body>
   <div class="guest-wrapper">
-    <div class="famdoc-card auth-card">
+    <div id="auth-card" class="famdoc-card auth-card fd-pop-in">
       <div class="auth-header">
         <a href="/index.html" class="auth-logo">
           <i class="fas fa-box-archive"></i>
@@ -129,6 +129,15 @@
       errorMessage.textContent = msg;
       errorAlert.style.display = "flex";
       window.scrollTo(0, 0);
+
+      // Visual feedback: shake the card
+      const card = document.getElementById("auth-card");
+      card.classList.remove("fd-shake");
+      void card.offsetWidth; // Reflow
+      card.classList.add("fd-shake");
+      card.addEventListener("animationend", () => {
+        card.classList.remove("fd-shake");
+      }, { once: true });
     }
   </script>
 </body>

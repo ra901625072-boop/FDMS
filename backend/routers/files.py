@@ -492,8 +492,8 @@ def download_file(
     ip = request.client.host if request.client else "127.0.0.1"
     log_action(db, "DOWNLOAD_FILE", current_user.id, current_user.family_id, ip, f"Downloaded file: {file.filename}")
     
-    # Try to get direct redirect download URL for cloud providers
-    if file.storage_provider in ("google", "mega"):
+    # Try to get direct redirect download URL for cloud providers (only MEGA, as Google blocks direct browser redirects)
+    if file.storage_provider == "mega":
         try:
             provider = get_storage_provider(file.storage_provider)
             config = get_file_storage_config(file, family, db)
@@ -662,3 +662,58 @@ def delete_file(
     log_action(db, "DELETE_FILE", current_user.id, current_user.family_id, ip, f"Soft-deleted file: {file.filename}")
     
     return None
+
+@router.patch("/{file_id}/move", response_model=schemas.FileResponse)
+def move_file(
+    file_id: int,
+    file_in: schemas.FileMove,
+    request: Request,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    file = db.query(models.File).options(joinedload(models.File.uploader)).filter(
+        models.File.id == file_id,
+        models.File.family_id == current_user.family_id,
+        models.File.deleted_at == None
+    ).first()
+    
+    if not file:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        
+    # Verify destination folder exists
+    if file_in.folder_id is not None:
+        folder = db.query(models.Folder).filter(
+            models.Folder.id == file_in.folder_id,
+            models.Folder.family_id == current_user.family_id,
+            models.Folder.deleted_at == None
+        ).first()
+        if not folder:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Destination folder not found")
+
+    file.folder_id = file_in.folder_id
+    db.commit()
+    db.refresh(file)
+    
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    dest_name = "Root" if file.folder_id is None else f"Folder ID {file.folder_id}"
+    log_action(db, "MOVE_FILE", current_user.id, current_user.family_id, ip, f"Moved file '{file.filename}' to '{dest_name}'")
+    
+    uploader_email = None
+    if file.uploader:
+        uploader_email = file.uploader.email
+        
+    return {
+        "id": file.id,
+        "filename": file.filename,
+        "file_type": file.file_type,
+        "size_bytes": file.size_bytes,
+        "uploader_id": file.uploader_id,
+        "uploader_email": uploader_email,
+        "folder_id": file.folder_id,
+        "family_id": file.family_id,
+        "upload_date": file.upload_date,
+        "storage_provider": file.storage_provider,
+        "cloud_file_id": file.cloud_file_id,
+        "cloud_link": file.cloud_link
+    }

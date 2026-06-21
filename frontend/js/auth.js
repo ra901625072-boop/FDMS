@@ -110,7 +110,7 @@ function injectLayout(user) {
 
   // 3. Create Sidebar
   const sidebar = document.createElement("nav");
-  sidebar.className = "sidebar";
+  sidebar.className = "sidebar fd-fade-in";
   sidebar.id = "sidebarMenu";
   sidebar.innerHTML = `
     <a href="/dashboard.html" class="sidebar-logo">
@@ -193,7 +193,7 @@ function injectLayout(user) {
 
   // 6. Create Main Content element
   const mainContent = document.createElement("main");
-  mainContent.className = "main-content";
+  mainContent.className = "main-content fd-page-enter";
   mainContent.id = "mainContent";
 
   // Move all existing children of container into mainContent (preserves event listeners!)

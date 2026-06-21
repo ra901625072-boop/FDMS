@@ -99,7 +99,37 @@
 
       <!-- Items view wrapper -->
       <div id="items-wrapper" class="items-grid">
-        <!-- Rendered dynamically -->
+        <!-- Skeleton Loading State (6 cards) -->
+        <div class="fd-skel-vault-item">
+          <div class="fd-skel fd-skel-circle" style="width: 2.75rem; height: 2.75rem; margin-bottom: 0.75rem;"></div>
+          <div class="fd-skel fd-skel-text md" style="margin-bottom: 0.35rem;"></div>
+          <div class="fd-skel fd-skel-text sm"></div>
+        </div>
+        <div class="fd-skel-vault-item">
+          <div class="fd-skel fd-skel-circle" style="width: 2.75rem; height: 2.75rem; margin-bottom: 0.75rem;"></div>
+          <div class="fd-skel fd-skel-text md" style="margin-bottom: 0.35rem;"></div>
+          <div class="fd-skel fd-skel-text sm"></div>
+        </div>
+        <div class="fd-skel-vault-item">
+          <div class="fd-skel fd-skel-circle" style="width: 2.75rem; height: 2.75rem; margin-bottom: 0.75rem;"></div>
+          <div class="fd-skel fd-skel-text md" style="margin-bottom: 0.35rem;"></div>
+          <div class="fd-skel fd-skel-text sm"></div>
+        </div>
+        <div class="fd-skel-vault-item">
+          <div class="fd-skel fd-skel-circle" style="width: 2.75rem; height: 2.75rem; margin-bottom: 0.75rem;"></div>
+          <div class="fd-skel fd-skel-text md" style="margin-bottom: 0.35rem;"></div>
+          <div class="fd-skel fd-skel-text sm"></div>
+        </div>
+        <div class="fd-skel-vault-item">
+          <div class="fd-skel fd-skel-circle" style="width: 2.75rem; height: 2.75rem; margin-bottom: 0.75rem;"></div>
+          <div class="fd-skel fd-skel-text md" style="margin-bottom: 0.35rem;"></div>
+          <div class="fd-skel fd-skel-text sm"></div>
+        </div>
+        <div class="fd-skel-vault-item">
+          <div class="fd-skel fd-skel-circle" style="width: 2.75rem; height: 2.75rem; margin-bottom: 0.75rem;"></div>
+          <div class="fd-skel fd-skel-text md" style="margin-bottom: 0.35rem;"></div>
+          <div class="fd-skel fd-skel-text sm"></div>
+        </div>
       </div>
       
       <!-- Explorer Empty State -->
@@ -155,6 +185,30 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary modal-close-btn">Cancel</button>
             <button type="submit" class="btn btn-primary">Rename</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Move Item Modal -->
+    <div id="modal-move" class="modal-overlay">
+      <div class="famdoc-modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Move Item</h3>
+          <button class="modal-close"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="form-move">
+          <input type="hidden" id="move-item-type">
+          <input type="hidden" id="move-item-id">
+          <div class="modal-body">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="move-dest-select" class="form-label">Destination Folder</label>
+              <select id="move-dest-select" class="form-control" required></select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary modal-close-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Move Here</button>
           </div>
         </form>
       </div>
@@ -311,6 +365,16 @@
       } catch (err) {
         console.error("Failed to load vault items:", err);
         FamDocAPI.utils.showToast("Failed to load vault files.", "error");
+        
+        // Hide skeletons on error
+        const wrapper = document.getElementById("items-wrapper");
+        if (wrapper) wrapper.innerHTML = "";
+        const emptyState = document.getElementById("explorer-empty");
+        if (emptyState) {
+          emptyState.style.display = "flex";
+          emptyState.querySelector(".empty-state-title").textContent = "Failed to load files";
+          emptyState.querySelector(".empty-state-text").textContent = err.message || "Please reload the page to try again.";
+        }
       }
     }
 
@@ -406,9 +470,11 @@
       const currentUser = JSON.parse(localStorage.getItem("famdoc_user"));
 
       // 1. Render Subfolders
-      subFolders.forEach(folder => {
+      subFolders.forEach((folder, index) => {
         const folderCard = document.createElement("div");
-        folderCard.className = "vault-item";
+        const delay = Math.min(index * 0.05, 0.5);
+        folderCard.className = "vault-item fd-fade-up fd-stagger";
+        folderCard.style.setProperty("--fd-delay", `${delay}s`);
         
         folderCard.addEventListener("click", (e) => {
           if (e.target.closest("[data-action]") || e.target.closest(".dropdown-menu")) {
@@ -446,6 +512,9 @@
             <button class="dropdown-item" data-action="rename-folder" data-id="${folder.id}">
               <i class="fas fa-edit"></i> Rename
             </button>
+            <button class="dropdown-item" data-action="move-folder" data-id="${folder.id}">
+              <i class="fas fa-arrows-alt"></i> Move
+            </button>
             <button class="dropdown-item danger" data-action="delete-folder" data-id="${folder.id}">
               <i class="fas fa-trash-alt"></i> Delete
             </button>
@@ -455,9 +524,11 @@
       });
 
       // 2. Render Files
-      currentFiles.forEach(file => {
+      currentFiles.forEach((file, index) => {
         const fileCard = document.createElement("div");
-        fileCard.className = "vault-item";
+        const delay = Math.min((subFolders.length + index) * 0.05, 0.5);
+        fileCard.className = "vault-item fd-fade-up fd-stagger";
+        fileCard.style.setProperty("--fd-delay", `${delay}s`);
         
         fileCard.addEventListener("click", (e) => {
           if (e.target.closest("[data-action]") || e.target.closest(".dropdown-menu")) {
@@ -513,9 +584,12 @@
             <button class="dropdown-item" data-action="share-file" data-id="${file.id}">
               <i class="fas fa-share-alt"></i> Share Link
             </button>
-            ${canManage ? `
+             ${canManage ? `
               <button class="dropdown-item" data-action="rename-file" data-id="${file.id}">
                 <i class="fas fa-edit"></i> Rename
+              </button>
+              <button class="dropdown-item" data-action="move-file" data-id="${file.id}">
+                <i class="fas fa-arrows-alt"></i> Move
               </button>
               <button class="dropdown-item danger" data-action="delete-file" data-id="${file.id}">
                 <i class="fas fa-trash-alt"></i> Delete
@@ -617,6 +691,74 @@
       document.getElementById("rename-item-id").value = id;
       document.getElementById("rename-input").value = name;
       openModal("modal-rename");
+    }
+
+    function triggerMove(type, id, currentName) {
+      document.getElementById("move-item-type").value = type;
+      document.getElementById("move-item-id").value = id;
+      
+      const select = document.getElementById("move-dest-select");
+      select.innerHTML = "";
+      
+      // Add Root option
+      const rootOpt = document.createElement("option");
+      rootOpt.value = "root";
+      rootOpt.textContent = "Root Folder ( / )";
+      select.appendChild(rootOpt);
+      
+      // Helper function to build folder select tree path names
+      function getFolderPath(folderId) {
+        let path = [];
+        let currId = folderId;
+        while (currId) {
+          const f = allFolders.find(x => x.id === currId);
+          if (!f) break;
+          path.unshift(f.name);
+          currId = f.parent_id;
+        }
+        return "/" + path.join("/");
+      }
+      
+      // Calculate invalid folder IDs if type is "folder" to prevent circular references
+      const invalidFolderIds = new Set();
+      if (type === "folder") {
+        invalidFolderIds.add(id);
+        
+        // Find all transitive children of this folder
+        let changed = true;
+        while (changed) {
+          changed = false;
+          allFolders.forEach(f => {
+            if (f.parent_id && invalidFolderIds.has(f.parent_id) && !invalidFolderIds.has(f.id)) {
+              invalidFolderIds.add(f.id);
+              changed = true;
+            }
+          });
+        }
+      }
+      
+      // Populate select dropdown
+      allFolders.forEach(folder => {
+        if (invalidFolderIds.has(folder.id)) return;
+        
+        // Also don't show folder's current parent, since it's already there
+        if (type === "folder") {
+          const currentFolder = allFolders.find(x => x.id === id);
+          if (currentFolder && currentFolder.parent_id === folder.id) return;
+          if (currentFolder && !currentFolder.parent_id && folder.id === "root") return; // already in root
+        } else if (type === "file") {
+          const currentFile = currentFiles.find(x => x.id === id);
+          if (currentFile && currentFile.folder_id === folder.id) return;
+          if (currentFile && currentFile.folder_id === null && folder.id === "root") return; // already in root
+        }
+        
+        const opt = document.createElement("option");
+        opt.value = folder.id;
+        opt.textContent = getFolderPath(folder.id);
+        select.appendChild(opt);
+      });
+      
+      openModal("modal-move");
     }
 
     // Share link configuration
@@ -821,6 +963,9 @@
         } else if (action === "rename-folder") {
           const folder = allFolders.find(f => f.id === id);
           if (folder) triggerRename("folder", folder.id, folder.name);
+        } else if (action === "move-folder") {
+          const folder = allFolders.find(f => f.id === id);
+          if (folder) triggerMove("folder", folder.id, folder.name);
         } else if (action === "delete-folder") {
           const folder = allFolders.find(f => f.id === id);
           if (folder) deleteFolder(folder.id, folder.name);
@@ -833,6 +978,9 @@
         } else if (action === "rename-file") {
           const file = currentFiles.find(f => f.id === id);
           if (file) triggerRename("file", file.id, file.filename);
+        } else if (action === "move-file") {
+          const file = currentFiles.find(f => f.id === id);
+          if (file) triggerMove("file", file.id, file.filename);
         } else if (action === "delete-file") {
           const file = currentFiles.find(f => f.id === id);
           if (file) deleteFile(file.id, file.filename);
@@ -893,6 +1041,28 @@
           }
           closeModal("modal-rename");
           FamDocAPI.utils.showToast(`Item renamed to "${name}".`, "success");
+          refreshData();
+        } catch (err) {
+          FamDocAPI.utils.showToast(err.message, "error");
+        }
+      });
+
+      // Move Form Submit
+      document.getElementById("form-move").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const type = document.getElementById("move-item-type").value;
+        const id = parseInt(document.getElementById("move-item-id").value);
+        const destVal = document.getElementById("move-dest-select").value;
+        const destFolderId = destVal === "root" ? null : parseInt(destVal);
+
+        try {
+          if (type === "folder") {
+            await FamDocAPI.folders.move(id, destFolderId);
+          } else {
+            await FamDocAPI.files.move(id, destFolderId);
+          }
+          closeModal("modal-move");
+          FamDocAPI.utils.showToast("Item moved successfully.", "success");
           refreshData();
         } catch (err) {
           FamDocAPI.utils.showToast(err.message, "error");

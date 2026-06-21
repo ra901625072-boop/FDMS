@@ -22,7 +22,45 @@
     <div class="famdoc-card" style="min-height: 400px;">
       
       <div id="recycle-list" class="items-list">
-        <!-- Dynamically populated list of items -->
+        <!-- Skeleton Loading State (3 rows) -->
+        <div class="fd-skel-recycle-placeholder">
+          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem; cursor: default;">
+            <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+            <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
+              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 60%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 40%;"></div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            </div>
+          </div>
+          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem; cursor: default;">
+            <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+            <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
+              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 70%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 30%;"></div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            </div>
+          </div>
+          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; cursor: default;">
+            <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+            <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
+              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 50%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 50%;"></div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- Empty State -->
@@ -75,7 +113,46 @@
       const listContainer = document.getElementById("recycle-list");
       const emptyState = document.getElementById("recycle-empty");
       
-      listContainer.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-ink-muted); text-align: center; margin-top: 2rem;">Retrieving deleted records...</p>`;
+      listContainer.innerHTML = `
+        <div class="fd-skel-recycle-placeholder">
+          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem; cursor: default;">
+            <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+            <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
+              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 60%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 40%;"></div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            </div>
+          </div>
+          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem; cursor: default;">
+            <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+            <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
+              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 70%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 30%;"></div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            </div>
+          </div>
+          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; cursor: default;">
+            <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
+            <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
+              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
+              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 50%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 50%;"></div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            </div>
+          </div>
+        </div>
+      `;
       emptyState.style.display = "none";
 
       try {
@@ -96,9 +173,10 @@
         listContainer.innerHTML = "";
 
         // 1. Render Deleted Folders
-        deletedFolders.forEach(folder => {
+        deletedFolders.forEach((folder, index) => {
           const row = document.createElement("div");
-          row.className = "vault-item";
+          row.className = "vault-item fd-fade-up fd-stagger";
+          row.style.setProperty("--fd-delay", `${index * 0.05}s`);
           row.style.cursor = "default";
           row.style.padding = "0.75rem 1.25rem";
           row.style.gap = "1rem";
@@ -130,9 +208,10 @@
         });
 
         // 2. Render Deleted Files
-        deletedFiles.forEach(file => {
+        deletedFiles.forEach((file, index) => {
           const row = document.createElement("div");
-          row.className = "vault-item";
+          row.className = "vault-item fd-fade-up fd-stagger";
+          row.style.setProperty("--fd-delay", `${(deletedFolders.length + index) * 0.05}s`);
           row.style.cursor = "default";
           row.style.padding = "0.75rem 1.25rem";
           row.style.gap = "1rem";
@@ -168,6 +247,12 @@
       } catch (err) {
         console.error("Recycle bin load error:", err);
         FamDocAPI.utils.showToast("Failed to load deleted files.", "error");
+        listContainer.innerHTML = `
+          <div class="empty-state fd-fade-in" style="padding: 2rem 0; color: var(--warning-red);">
+            <i class="fas fa-exclamation-triangle empty-state-icon" style="font-size: 2.5rem; color: var(--warning-red);"></i>
+            <h4 class="empty-state-title">Failed to load deleted records</h4>
+          </div>
+        `;
       }
     }
 

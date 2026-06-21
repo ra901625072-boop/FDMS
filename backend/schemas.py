@@ -132,6 +132,9 @@ class FolderCreate(BaseModel):
 class FolderRename(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
 
+class FolderMove(BaseModel):
+    parent_id: Optional[int] = None
+
 class FolderResponse(BaseModel):
     id: int
     name: str
@@ -151,6 +154,9 @@ class FolderResponse(BaseModel):
 
 class FileRename(BaseModel):
     filename: str = Field(..., min_length=1, max_length=255)
+
+class FileMove(BaseModel):
+    folder_id: Optional[int] = None
 
 class FileResponse(BaseModel):
     id: int

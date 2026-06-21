@@ -1769,3 +1769,168 @@ a:hover {
 .fab-menu-item:active {
   transform: scale(0.92) !important;
 }
+
+/* ==========================================
+   FamDoc Polished Animations & Skeleton System
+   ========================================== */
+
+/* Keyframes */
+@keyframes fdShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fdFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fdFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fdFadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fdPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  70% {
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fdShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes fdSuccessPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Skeleton Primitive Elements */
+.fd-skel {
+  background: linear-gradient(
+    90deg,
+    var(--accent-terracotta-light) 25%,
+    #FFFDF9 50%,
+    var(--accent-terracotta-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: fdShimmer 1.5s infinite linear;
+  display: inline-block;
+}
+
+.fd-skel-circle {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fd-skel-text {
+  height: 12px;
+  border-radius: 4px;
+  background-color: var(--accent-terracotta-light);
+}
+.fd-skel-text.sm { width: 30%; }
+.fd-skel-text.md { width: 60%; }
+.fd-skel-text.lg { width: 85%; }
+
+.fd-skel-block {
+  border-radius: var(--radius-md);
+  background-color: var(--accent-terracotta-light);
+}
+
+/* Pre-composed skeletons */
+.fd-skel-vault-item {
+  background-color: #FFFDF9;
+  border: 1px solid var(--border-paper);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  aspect-ratio: 1 / 1.05;
+  justify-content: center;
+}
+
+/* Stagger entrance animations support */
+.fd-stagger {
+  opacity: 0;
+  animation-delay: var(--fd-delay, 0s) !important;
+  animation-fill-mode: forwards;
+}
+
+/* Utility Animation Classes */
+.fd-page-enter {
+  animation: fdFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.fd-fade-up {
+  animation: fdFadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.fd-fade-in {
+  animation: fdFadeIn 0.3s ease forwards;
+}
+
+.fd-pop-in {
+  animation: fdPopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.fd-shake {
+  animation: fdShake 0.4s ease-in-out;
+}
+
+.fd-success-pop {
+  animation: fdSuccessPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Accessibility / Reduced Motion Fallback */
+@media (prefers-reduced-motion: reduce) {
+  .fd-skel,
+  .fd-page-enter,
+  .fd-fade-up,
+  .fd-fade-in,
+  .fd-pop-in,
+  .fd-shake,
+  .fd-success-pop {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .fd-skel {
+    background: var(--accent-terracotta-light) !important;
+  }
+}

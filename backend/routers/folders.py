@@ -193,3 +193,91 @@ def delete_folder(
     log_action(db, "DELETE_FOLDER", current_user.id, current_user.family_id, ip, f"Soft-deleted folder: {folder.name}")
     
     return None
+
+@router.patch("/{folder_id}/move", response_model=schemas.FolderResponse)
+def move_folder(
+    folder_id: int,
+    folder_in: schemas.FolderMove,
+    request: Request,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    folder = db.query(models.Folder).filter(
+        models.Folder.id == folder_id,
+        models.Folder.family_id == current_user.family_id,
+        models.Folder.deleted_at == None
+    ).first()
+    
+    if not folder:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Folder not found"
+        )
+        
+    # Validate destination parent_id
+    if folder_in.parent_id is not None:
+        if folder_in.parent_id == folder_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot move a folder inside itself"
+            )
+            
+        # Verify parent exists
+        parent = db.query(models.Folder).filter(
+            models.Folder.id == folder_in.parent_id,
+            models.Folder.family_id == current_user.family_id,
+            models.Folder.deleted_at == None
+        ).first()
+        if not parent:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Destination folder not found"
+            )
+            
+        # Check for circular reference: destination parent must not be a child of this folder
+        curr_parent = parent
+        while curr_parent is not None:
+            if curr_parent.id == folder_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot move a folder inside its own subfolder"
+                )
+            if curr_parent.parent_id is None:
+                break
+            curr_parent = db.query(models.Folder).filter(
+                models.Folder.id == curr_parent.parent_id,
+                models.Folder.deleted_at == None
+            ).first()
+
+    folder.parent_id = folder_in.parent_id
+    db.commit()
+    db.refresh(folder)
+    
+    # Audit log
+    ip = request.client.host if request.client else "127.0.0.1"
+    dest_name = "Root" if folder.parent_id is None else f"Folder ID {folder.parent_id}"
+    log_action(db, "MOVE_FOLDER", current_user.id, current_user.family_id, ip, f"Moved folder '{folder.name}' to '{dest_name}'")
+    
+    # Calculate stats efficiently
+    stats = db.query(
+        func.count(models.File.id).label('file_count'),
+        func.coalesce(func.sum(models.File.size_bytes), 0).label('total_size'),
+        func.max(models.File.upload_date).label('last_modified_file')
+    ).filter(models.File.folder_id == folder.id, models.File.deleted_at == None).first()
+    
+    file_count = stats.file_count or 0
+    total_size = stats.total_size or 0
+    last_modified = folder.created_at
+    if stats.last_modified_file and stats.last_modified_file > last_modified:
+        last_modified = stats.last_modified_file
+
+    return {
+        "id": folder.id,
+        "name": folder.name,
+        "parent_id": folder.parent_id,
+        "family_id": folder.family_id,
+        "created_at": folder.created_at,
+        "file_count": file_count,
+        "total_size_bytes": total_size,
+        "last_modified": last_modified
+    }

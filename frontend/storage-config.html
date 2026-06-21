@@ -140,7 +140,7 @@
     <div id="storage-layout-content" style="max-width: 800px; margin: 0 auto; padding-bottom: 3rem;">
       
       <!-- Status Card -->
-      <div class="famdoc-card" style="margin-bottom: 2rem; border-left: 4px solid var(--accent-terracotta);">
+      <div class="famdoc-card fd-fade-up fd-stagger" style="margin-bottom: 2rem; border-left: 4px solid var(--accent-terracotta); --fd-delay: 0.05s;">
         <h2 style="font-family: var(--font-serif); font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-ink);">
           <i class="fas fa-signal" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Active Storage Status
         </h2>
@@ -148,7 +148,7 @@
           <div style="margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
             <div>
               <strong>Active Provider:</strong> 
-              <span id="storage-active-provider" class="badge badge-primary" style="font-size: 0.85rem; padding: 0.25rem 0.6rem;">local</span>
+              <span id="storage-active-provider" class="fd-skel" style="display: inline-block; width: 60px; height: 18px; border-radius: 50px; vertical-align: middle;"></span>
             </div>
             <div style="display: flex; align-items: center; font-size: 0.8rem; color: var(--text-ink-muted);">
               <span class="pulse-dot"></span> System Connected
@@ -164,7 +164,7 @@
       <div class="storage-grid">
         
         <!-- Google Drive Form Card -->
-        <div class="famdoc-card storage-card" id="google-card">
+        <div class="famdoc-card storage-card fd-fade-up fd-stagger" id="google-card" style="--fd-delay: 0.1s;">
           <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; position: relative;">
             <h2 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-ink); margin: 0;">
               <i class="fab fa-google" style="color: #4285F4; margin-right: 0.5rem;"></i>Google Drive
@@ -191,7 +191,7 @@
         </div>
 
         <!-- MEGA Form Card -->
-        <div class="famdoc-card storage-card" id="mega-card">
+        <div class="famdoc-card storage-card fd-fade-up fd-stagger" id="mega-card" style="--fd-delay: 0.15s;">
           <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; position: relative;">
             <h2 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-ink); margin: 0;">
               <i class="fas fa-cloud" style="color: #D32F2F; margin-right: 0.5rem;"></i>MEGA Cloud
@@ -343,6 +343,8 @@
         megaBadgeContainer.innerHTML = "";
         
         const provider = config.storage_provider || "local";
+        activeProviderEl.className = "badge badge-primary fd-fade-in";
+        activeProviderEl.style.cssText = "font-size: 0.85rem; padding: 0.25rem 0.6rem; vertical-align: middle;";
         activeProviderEl.textContent = provider.toUpperCase();
         
         if (provider === "google") {

@@ -194,6 +194,13 @@ const FamDocAPI = {
       });
     },
 
+    async move(folderId, parentId) {
+      return FamDocAPI.request(`/api/folders/${folderId}/move`, {
+        method: "PATCH",
+        body: JSON.stringify({ parent_id: parentId })
+      });
+    },
+
     async delete(folderId) {
       return FamDocAPI.request(`/api/folders/${folderId}`, {
         method: "DELETE"
@@ -268,6 +275,13 @@ const FamDocAPI = {
       return FamDocAPI.request(`/api/files/${fileId}`, {
         method: "PUT",
         body: JSON.stringify({ filename })
+      });
+    },
+
+    async move(fileId, folderId) {
+      return FamDocAPI.request(`/api/files/${fileId}/move`, {
+        method: "PATCH",
+        body: JSON.stringify({ folder_id: folderId })
       });
     },
 

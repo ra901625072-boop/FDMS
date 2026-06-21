@@ -28,7 +28,7 @@
     <div class="dashboard-sections">
       
       <!-- Left Column: Profile Details Form -->
-      <div class="famdoc-card">
+      <div class="famdoc-card fd-fade-up fd-stagger" style="--fd-delay: 0.05s;">
         <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
           <i class="fas fa-user-cog" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Account Details
         </h2>
@@ -70,14 +70,19 @@
       <div style="display: flex; flex-direction: column; gap: 2rem;">
 
         <!-- Family Secret Code -->
-        <div class="famdoc-card">
+        <div class="famdoc-card fd-fade-up fd-stagger" style="--fd-delay: 0.12s;">
           <h2 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">
             <i class="fas fa-key" style="color: var(--accent-terracotta); margin-right: 0.5rem;"></i>Family Secret Code
           </h2>
 
           <!-- State 1: Loading -->
-          <div id="family-loading" style="color: var(--text-ink-muted);">
-            <i class="fas fa-spinner fa-spin"></i> Checking family settings...
+          <div id="family-loading">
+            <div style="background-color: var(--bg-linen); border: 1px solid var(--border-paper); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+              <div class="fd-skel fd-skel-text lg" style="height: 14px; width: 85%;"></div>
+              <div class="fd-skel fd-skel-text md" style="height: 14px; width: 60%;"></div>
+              <div class="fd-skel fd-skel-block" style="height: 20px; width: 80px; border-radius: 50px;"></div>
+            </div>
+            <div class="fd-skel fd-skel-block" style="height: 38px; width: 100%;"></div>
           </div>
 
           <!-- State 2: No Family -->
@@ -310,6 +315,7 @@
           const ticketContainer = document.getElementById("ticket-reveal-container");
           const codeField = document.getElementById("revealed-code");
           codeField.textContent = result.secret_code;
+          ticketContainer.classList.add("fd-fade-in");
           ticketContainer.style.display = "block";
 
           // Setup copy button
@@ -356,6 +362,7 @@
 
       if (!currentUser.family_id) {
         loadingDiv.style.display = "none";
+        noneDiv.classList.add("fd-fade-in");
         noneDiv.style.display = "block";
         return;
       }
@@ -367,16 +374,19 @@
         if (currentUser.role === "admin") {
           document.getElementById("admin-family-name").textContent = familyDetails.name;
           document.getElementById("admin-family-members").textContent = familyDetails.max_members;
+          adminDiv.classList.add("fd-fade-in");
           adminDiv.style.display = "block";
         } else {
           document.getElementById("member-family-name").textContent = familyDetails.name;
           document.getElementById("member-family-members").textContent = familyDetails.max_members;
+          memberDiv.classList.add("fd-fade-in");
           memberDiv.style.display = "block";
         }
       } catch (err) {
         console.error("Failed to load family details:", err);
         loadingDiv.style.display = "none";
         // Fallback for errors
+        noneDiv.classList.add("fd-fade-in");
         noneDiv.style.display = "block";
       }
     }
