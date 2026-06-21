@@ -1,4 +1,7 @@
 import os
+import asyncio
+if not hasattr(asyncio, "coroutine"):
+    asyncio.coroutine = lambda f: f
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
