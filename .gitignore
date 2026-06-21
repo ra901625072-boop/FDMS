@@ -17,7 +17,6 @@ __pycache__/
 
 # App specific storage (local documents)
 backend/local_vault/
-backend/storage/
 backend/scratch/
 
 # IDEs
