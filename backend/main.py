@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from database import engine, Base, run_migrations
 import models
-from routers import auth, family, storage, folders, files, recycle_bin, search, dashboard, share, views
+from routers import auth, family, storage_config, folders, files, recycle_bin, search, dashboard, share, views
 from config import CORS_ORIGINS, IS_DEFAULT_JWT_SECRET
 
 # Create database tables
@@ -37,7 +37,7 @@ app.add_middleware(
 # Register REST API routers
 app.include_router(auth.router)
 app.include_router(family.router)
-app.include_router(storage.router)
+app.include_router(storage_config.router)
 app.include_router(folders.router)
 app.include_router(files.router)
 app.include_router(recycle_bin.router)
