@@ -103,9 +103,14 @@ function injectLayout(user) {
       <i class="fas fa-box-archive"></i>
       <span>FamDoc</span>
     </a>
-    <button class="hamburger" id="hamburgerToggle">
-      <i class="fas fa-bars"></i>
-    </button>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <button class="theme-toggle-btn" id="mobileThemeToggle" aria-label="Toggle dark mode">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button class="hamburger" id="hamburgerToggle" aria-label="Toggle navigation menu">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
   `;
 
   // 3. Create Sidebar
@@ -144,6 +149,12 @@ function injectLayout(user) {
     </div>
 
     <div class="sidebar-footer">
+      <div class="theme-toggle-row" style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-ink-muted);">Appearance</span>
+        <button id="desktopThemeToggle" class="theme-toggle-btn" aria-label="Toggle dark mode">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
       <div class="user-profile-badge" onclick="window.location.href='/profile.html'" style="cursor: pointer;">
         <div class="user-avatar">
           ${user.username ? user.username.substring(0, 2).toUpperCase() : "U"}

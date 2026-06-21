@@ -7,6 +7,15 @@
   <!-- SEO Meta Tags -->
   <meta name="description" content="FamDoc is a warm, tactile family vault for your shared documents, photos, and records. Safe, secure, and private.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Theme Management -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('famdoc-theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="/js/theme.js" defer></script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     .landing-wrapper {
@@ -70,7 +79,7 @@
     }
     
     .feature-card {
-      background-color: #FFFDF9;
+      background-color: var(--surface-card);
       border: 1px solid var(--border-paper);
       border-radius: var(--radius-lg);
       padding: 2.25rem;
@@ -82,19 +91,6 @@
       transform: translateY(-2px);
     }
     
-    .feature-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-md);
-      background-color: var(--accent-terracotta-light);
-      color: var(--accent-terracotta);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      margin-bottom: 1.5rem;
-      border: 1px solid var(--border-paper);
-    }
     
     .feature-title {
       font-size: 1.25rem;
@@ -115,6 +111,9 @@
 </head>
 <body>
   <div class="landing-wrapper fd-page-enter">
+    <button class="theme-toggle-btn guest-theme-toggle" aria-label="Toggle dark mode">
+      <i class="fas fa-moon"></i>
+    </button>
     <div class="landing-logo">
       <i class="fas fa-box-archive"></i>
       <span>FamDoc</span>
@@ -143,7 +142,7 @@
     
     <div class="landing-features">
       <div class="feature-card">
-        <div class="feature-icon">
+        <div class="icon-chip lg" style="margin-bottom: 1.5rem;">
           <i class="fas fa-shield-alt"></i>
         </div>
         <h3 class="feature-title">Secure & Confidential</h3>
@@ -151,7 +150,7 @@
       </div>
       
       <div class="feature-card">
-        <div class="feature-icon">
+        <div class="icon-chip lg" style="margin-bottom: 1.5rem;">
           <i class="fas fa-ticket-alt"></i>
         </div>
         <h3 class="feature-title">Shared Keepsake Stub</h3>
@@ -159,7 +158,7 @@
       </div>
       
       <div class="feature-card">
-        <div class="feature-icon">
+        <div class="icon-chip lg" style="margin-bottom: 1.5rem;">
           <i class="fas fa-search"></i>
         </div>
         <h3 class="feature-title">Intuitive File Discovery</h3>

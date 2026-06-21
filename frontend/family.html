@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Family Settings — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Theme Management -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('famdoc-theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="/js/theme.js" defer></script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -38,25 +47,25 @@
           <tbody id="members-table-body">
             <!-- Skeleton Loading State (3 rows) -->
             <tr class="fd-skel-table-row">
-              <td data-label="Member"><div class="fd-skel fd-skel-text md" style="height: 14px; width: 100px;"></div></td>
-              <td data-label="Email"><div class="fd-skel fd-skel-text lg" style="height: 14px; width: 160px;"></div></td>
-              <td data-label="Role"><div class="fd-skel fd-skel-block" style="height: 20px; width: 60px; border-radius: 50px;"></div></td>
-              <td data-label="Joined"><div class="fd-skel fd-skel-text sm" style="height: 14px; width: 80px;"></div></td>
-              <td data-label="Actions" style="text-align: right;"><div class="fd-skel fd-skel-block" style="height: 28px; width: 80px; margin-left: auto;"></div></td>
+              <td data-label="Member"><div class="fd-skel fd-skel-text md" ></div></td>
+              <td data-label="Email"><div class="fd-skel fd-skel-text lg" ></div></td>
+              <td data-label="Role"><div class="fd-skel skel-badge"></div></td>
+              <td data-label="Joined"><div class="fd-skel fd-skel-text sm" ></div></td>
+              <td data-label="Actions" style="text-align: right;"><div class="fd-skel skel-btn" style="margin-left: auto;"></div></td>
             </tr>
             <tr class="fd-skel-table-row">
-              <td data-label="Member"><div class="fd-skel fd-skel-text md" style="height: 14px; width: 120px;"></div></td>
-              <td data-label="Email"><div class="fd-skel fd-skel-text lg" style="height: 14px; width: 180px;"></div></td>
-              <td data-label="Role"><div class="fd-skel fd-skel-block" style="height: 20px; width: 60px; border-radius: 50px;"></div></td>
-              <td data-label="Joined"><div class="fd-skel fd-skel-text sm" style="height: 14px; width: 80px;"></div></td>
-              <td data-label="Actions" style="text-align: right;"><div class="fd-skel fd-skel-block" style="height: 28px; width: 80px; margin-left: auto;"></div></td>
+              <td data-label="Member"><div class="fd-skel fd-skel-text md" ></div></td>
+              <td data-label="Email"><div class="fd-skel fd-skel-text lg" ></div></td>
+              <td data-label="Role"><div class="fd-skel skel-badge"></div></td>
+              <td data-label="Joined"><div class="fd-skel fd-skel-text sm" ></div></td>
+              <td data-label="Actions" style="text-align: right;"><div class="fd-skel skel-btn" style="margin-left: auto;"></div></td>
             </tr>
             <tr class="fd-skel-table-row">
-              <td data-label="Member"><div class="fd-skel fd-skel-text md" style="height: 14px; width: 90px;"></div></td>
-              <td data-label="Email"><div class="fd-skel fd-skel-text lg" style="height: 14px; width: 150px;"></div></td>
-              <td data-label="Role"><div class="fd-skel fd-skel-block" style="height: 20px; width: 60px; border-radius: 50px;"></div></td>
-              <td data-label="Joined"><div class="fd-skel fd-skel-text sm" style="height: 14px; width: 80px;"></div></td>
-              <td data-label="Actions" style="text-align: right;"><div class="fd-skel fd-skel-block" style="height: 28px; width: 80px; margin-left: auto;"></div></td>
+              <td data-label="Member"><div class="fd-skel fd-skel-text md" ></div></td>
+              <td data-label="Email"><div class="fd-skel fd-skel-text lg" ></div></td>
+              <td data-label="Role"><div class="fd-skel skel-badge"></div></td>
+              <td data-label="Joined"><div class="fd-skel fd-skel-text sm" ></div></td>
+              <td data-label="Actions" style="text-align: right;"><div class="fd-skel skel-btn" style="margin-left: auto;"></div></td>
             </tr>
           </tbody>
         </table>
@@ -101,25 +110,25 @@
       // Initial shimmer skeleton rows
       tbody.innerHTML = `
         <tr class="fd-skel-table-row">
-          <td data-label="Member"><div class="fd-skel fd-skel-text md" style="height: 14px; width: 100px;"></div></td>
-          <td data-label="Email"><div class="fd-skel fd-skel-text lg" style="height: 14px; width: 160px;"></div></td>
-          <td data-label="Role"><div class="fd-skel fd-skel-block" style="height: 20px; width: 60px; border-radius: 50px;"></div></td>
-          <td data-label="Joined"><div class="fd-skel fd-skel-text sm" style="height: 14px; width: 80px;"></div></td>
-          <td data-label="Actions" style="text-align: right;"><div class="fd-skel fd-skel-block" style="height: 28px; width: 80px; margin-left: auto;"></div></td>
+          <td data-label="Member"><div class="fd-skel fd-skel-text md" ></div></td>
+          <td data-label="Email"><div class="fd-skel fd-skel-text lg" ></div></td>
+          <td data-label="Role"><div class="fd-skel skel-badge"></div></td>
+          <td data-label="Joined"><div class="fd-skel fd-skel-text sm" ></div></td>
+          <td data-label="Actions" style="text-align: right;"><div class="fd-skel skel-btn" style="margin-left: auto;"></div></td>
         </tr>
         <tr class="fd-skel-table-row">
-          <td data-label="Member"><div class="fd-skel fd-skel-text md" style="height: 14px; width: 120px;"></div></td>
-          <td data-label="Email"><div class="fd-skel fd-skel-text lg" style="height: 14px; width: 180px;"></div></td>
-          <td data-label="Role"><div class="fd-skel fd-skel-block" style="height: 20px; width: 60px; border-radius: 50px;"></div></td>
-          <td data-label="Joined"><div class="fd-skel fd-skel-text sm" style="height: 14px; width: 80px;"></div></td>
-          <td data-label="Actions" style="text-align: right;"><div class="fd-skel fd-skel-block" style="height: 28px; width: 80px; margin-left: auto;"></div></td>
+          <td data-label="Member"><div class="fd-skel fd-skel-text md" ></div></td>
+          <td data-label="Email"><div class="fd-skel fd-skel-text lg" ></div></td>
+          <td data-label="Role"><div class="fd-skel skel-badge"></div></td>
+          <td data-label="Joined"><div class="fd-skel fd-skel-text sm" ></div></td>
+          <td data-label="Actions" style="text-align: right;"><div class="fd-skel skel-btn" style="margin-left: auto;"></div></td>
         </tr>
         <tr class="fd-skel-table-row">
-          <td data-label="Member"><div class="fd-skel fd-skel-text md" style="height: 14px; width: 90px;"></div></td>
-          <td data-label="Email"><div class="fd-skel fd-skel-text lg" style="height: 14px; width: 150px;"></div></td>
-          <td data-label="Role"><div class="fd-skel fd-skel-block" style="height: 20px; width: 60px; border-radius: 50px;"></div></td>
-          <td data-label="Joined"><div class="fd-skel fd-skel-text sm" style="height: 14px; width: 80px;"></div></td>
-          <td data-label="Actions" style="text-align: right;"><div class="fd-skel fd-skel-block" style="height: 28px; width: 80px; margin-left: auto;"></div></td>
+          <td data-label="Member"><div class="fd-skel fd-skel-text md" ></div></td>
+          <td data-label="Email"><div class="fd-skel fd-skel-text lg" ></div></td>
+          <td data-label="Role"><div class="fd-skel skel-badge"></div></td>
+          <td data-label="Joined"><div class="fd-skel fd-skel-text sm" ></div></td>
+          <td data-label="Actions" style="text-align: right;"><div class="fd-skel skel-btn" style="margin-left: auto;"></div></td>
         </tr>
       `;
 

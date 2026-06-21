@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Profile — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Theme Management -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('famdoc-theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="/js/theme.js" defer></script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -153,7 +162,7 @@
       <div class="famdoc-modal" style="max-width: 450px;">
         <div class="modal-header">
           <h3 class="modal-title" id="wizard-title">Generate Invitation Code</h3>
-          <button class="modal-close" onclick="closeWizard()"><i class="fas fa-times"></i></button>
+          <button class="modal-close" onclick="closeWizard()" aria-label="Close modal"><i class="fas fa-times"></i></button>
         </div>
         <form id="family-wizard-form">
           <div class="modal-body">

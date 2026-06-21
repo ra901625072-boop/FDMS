@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shared Vault — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Theme Management -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('famdoc-theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="/js/theme.js" defer></script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     /* View layout active indicator */
@@ -134,7 +143,7 @@
       
       <!-- Explorer Empty State -->
       <div id="explorer-empty" class="empty-state" style="display: none;">
-        <i class="fas fa-folder-open empty-state-icon"></i>
+        <i class="fas fa-folder-open state-icon empty"></i>
         <h3 class="empty-state-title">This folder is empty</h3>
         <p class="empty-state-text">Drag and drop files here, or use the actions in the top-right to get started.</p>
       </div>
@@ -149,7 +158,7 @@
       <div class="famdoc-modal">
         <div class="modal-header">
           <h3 class="modal-title">Create New Folder</h3>
-          <button class="modal-close"><i class="fas fa-times"></i></button>
+          <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
         </div>
         <form id="form-create-folder">
           <div class="modal-body">
@@ -171,7 +180,7 @@
       <div class="famdoc-modal">
         <div class="modal-header">
           <h3 class="modal-title">Rename Item</h3>
-          <button class="modal-close"><i class="fas fa-times"></i></button>
+          <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
         </div>
         <form id="form-rename">
           <input type="hidden" id="rename-item-type">
@@ -195,7 +204,7 @@
       <div class="famdoc-modal">
         <div class="modal-header">
           <h3 class="modal-title">Move Item</h3>
-          <button class="modal-close"><i class="fas fa-times"></i></button>
+          <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
         </div>
         <form id="form-move">
           <input type="hidden" id="move-item-type">
@@ -219,7 +228,7 @@
       <div class="famdoc-modal" style="max-width: 550px;">
         <div class="modal-header">
           <h3 class="modal-title">Share Vault Item</h3>
-          <button class="modal-close"><i class="fas fa-times"></i></button>
+          <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
           <h4 id="share-filename" style="font-family: var(--font-serif); margin-bottom: 1.25rem;">File sharing details</h4>
@@ -273,7 +282,7 @@
               <i class="fas fa-download"></i>
               <span>Download</span>
             </a>
-            <button class="modal-close"><i class="fas fa-times"></i></button>
+            <button class="modal-close" aria-label="Close modal"><i class="fas fa-times"></i></button>
           </div>
         </div>
         <div class="preview-body" id="preview-content-area">
@@ -505,7 +514,7 @@
         folderCard.innerHTML = `
           <i class="item-icon folder fas fa-folder"></i>
           ${detailsHtml}
-          <button class="item-actions-trigger" data-action="toggle-dropdown">
+          <button class="item-actions-trigger" data-action="toggle-dropdown" aria-label="Actions Menu">
             <i class="fas fa-ellipsis-v"></i>
           </button>
           <div class="dropdown-menu">
@@ -574,7 +583,7 @@
         fileCard.innerHTML = `
           <i class="item-icon ${iconClass}"></i>
           ${detailsHtml}
-          <button class="item-actions-trigger" data-action="toggle-dropdown">
+          <button class="item-actions-trigger" data-action="toggle-dropdown" aria-label="Actions Menu">
             <i class="fas fa-ellipsis-v"></i>
           </button>
           <div class="dropdown-menu">
@@ -910,7 +919,7 @@
         } else {
           contentArea.innerHTML = `
             <div class="empty-state">
-              <i class="fas fa-file-signature empty-state-icon" style="font-size: 3rem;"></i>
+              <i class="fas fa-file-signature state-icon empty"></i>
               <h4 class="empty-state-title">No Preview Available</h4>
               <p class="empty-state-text" style="margin-bottom: 1rem;">FamDoc doesn't support inline previews for this file type (${ext.toUpperCase()}).</p>
               <button id="preview-fallback-download" class="btn btn-primary">
@@ -925,7 +934,7 @@
       } catch (err) {
         contentArea.innerHTML = `
           <div class="empty-state">
-            <i class="fas fa-exclamation-triangle empty-state-icon" style="color: var(--warning-red); font-size: 3rem;"></i>
+            <i class="fas fa-exclamation-triangle state-icon error"></i>
             <h4 class="empty-state-title">Preview Failed</h4>
             <p class="empty-state-text">Failed to fetch the file contents for preview from storage. Please download it directly.</p>
           </div>
@@ -1234,15 +1243,15 @@
 
   <!-- Floating Action Button for Mobile -->
   <div class="mobile-fab-container">
-    <button class="fab-btn" id="mobile-fab">
+    <button class="fab-btn" id="mobile-fab" aria-label="Add new item">
       <i class="fas fa-plus"></i>
     </button>
     <div class="fab-menu" id="fab-menu">
-      <button class="fab-menu-item" id="fab-upload-file" title="Upload File">
+      <button class="fab-menu-item" id="fab-upload-file" title="Upload File" aria-label="Upload File">
         <i class="fas fa-cloud-upload-alt"></i>
         <span>Upload File</span>
       </button>
-      <button class="fab-menu-item" id="fab-new-folder" title="New Folder">
+      <button class="fab-menu-item" id="fab-new-folder" title="New Folder" aria-label="New Folder">
         <i class="fas fa-folder-plus"></i>
         <span>New Folder</span>
       </button>

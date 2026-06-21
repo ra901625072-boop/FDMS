@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Storage Configuration — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Theme Management -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('famdoc-theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="/js/theme.js" defer></script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     /* Premium UI Polish and Animations */
@@ -62,8 +71,8 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: #2e7d32;
-      box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+      background-color: var(--success-sage);
+      box-shadow: 0 0 0 0 rgba(92, 122, 92, 0.7);
       animation: pulse 1.6s infinite;
       display: inline-block;
       margin-right: 0.25rem;
@@ -72,15 +81,15 @@
     @keyframes pulse {
       0% {
         transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+        box-shadow: 0 0 0 0 rgba(92, 122, 92, 0.7);
       }
       70% {
         transform: scale(1);
-        box-shadow: 0 0 0 6px rgba(46, 125, 50, 0);
+        box-shadow: 0 0 0 6px rgba(92, 122, 92, 0);
       }
       100% {
         transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(46, 125, 50, 0);
+        box-shadow: 0 0 0 0 rgba(92, 122, 92, 0);
       }
     }
     
@@ -166,8 +175,11 @@
         <!-- Google Drive Form Card -->
         <div class="famdoc-card storage-card fd-fade-up fd-stagger" id="google-card" style="--fd-delay: 0.1s;">
           <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; position: relative;">
-            <h2 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-ink); margin: 0;">
-              <i class="fab fa-google" style="color: #4285F4; margin-right: 0.5rem;"></i>Google Drive
+            <h2 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-ink); margin: 0; display: flex; align-items: center; gap: 0.75rem;">
+              <div class="icon-chip" style="background-color: rgba(66, 133, 244, 0.1); color: #4285F4; border-color: rgba(66, 133, 244, 0.2);">
+                <i class="fab fa-google"></i>
+              </div>
+              <span>Google Drive</span>
             </h2>
             <div id="google-active-badge-container"></div>
           </div>
@@ -193,8 +205,11 @@
         <!-- MEGA Form Card -->
         <div class="famdoc-card storage-card fd-fade-up fd-stagger" id="mega-card" style="--fd-delay: 0.15s;">
           <div class="card-header-flex" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; position: relative;">
-            <h2 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-ink); margin: 0;">
-              <i class="fas fa-cloud" style="color: #D32F2F; margin-right: 0.5rem;"></i>MEGA Cloud
+            <h2 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-ink); margin: 0; display: flex; align-items: center; gap: 0.75rem;">
+              <div class="icon-chip" style="background-color: rgba(211, 47, 47, 0.1); color: #D32F2F; border-color: rgba(211, 47, 47, 0.2);">
+                <i class="fas fa-cloud"></i>
+              </div>
+              <span>MEGA Cloud</span>
             </h2>
             <div id="mega-active-badge-container"></div>
           </div>

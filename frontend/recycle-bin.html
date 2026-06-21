@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recycle Bin — FamDoc</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Theme Management -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('famdoc-theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="/js/theme.js" defer></script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -24,40 +33,40 @@
       <div id="recycle-list" class="items-list">
         <!-- Skeleton Loading State (3 rows) -->
         <div class="fd-skel-recycle-placeholder">
-          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem; cursor: default;">
+          <div class="skel-row">
             <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
             <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
-              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
-              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 60%;"></div>
-              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 40%;"></div>
+              <div class="fd-skel fd-skel-text lg"></div>
+              <div class="fd-skel fd-skel-text md" style="width: 60%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="width: 40%;"></div>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            <div class="skel-actions">
+              <div class="fd-skel skel-btn"></div>
+              <div class="fd-skel skel-btn"></div>
             </div>
           </div>
-          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem; cursor: default;">
+          <div class="skel-row">
             <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
             <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
-              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
-              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 70%;"></div>
-              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 30%;"></div>
+              <div class="fd-skel fd-skel-text lg"></div>
+              <div class="fd-skel fd-skel-text md" style="width: 70%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="width: 30%;"></div>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            <div class="skel-actions">
+              <div class="fd-skel skel-btn"></div>
+              <div class="fd-skel skel-btn"></div>
             </div>
           </div>
-          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; cursor: default;">
+          <div class="skel-row" style="margin-bottom: 0;">
             <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
             <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
-              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
-              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 50%;"></div>
-              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 50%;"></div>
+              <div class="fd-skel fd-skel-text lg"></div>
+              <div class="fd-skel fd-skel-text md" style="width: 50%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="width: 50%;"></div>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            <div class="skel-actions">
+              <div class="fd-skel skel-btn"></div>
+              <div class="fd-skel skel-btn"></div>
             </div>
           </div>
         </div>
@@ -65,7 +74,7 @@
       
       <!-- Empty State -->
       <div id="recycle-empty" class="empty-state" style="display: none; padding: 4rem 0;">
-        <i class="fas fa-trash-restore empty-state-icon" style="font-size: 3.5rem;"></i>
+        <i class="fas fa-trash-restore state-icon empty"></i>
         <h3 class="empty-state-title">Recycle bin is empty</h3>
         <p class="empty-state-text">No folders or files have been deleted recently.</p>
       </div>
@@ -115,40 +124,40 @@
       
       listContainer.innerHTML = `
         <div class="fd-skel-recycle-placeholder">
-          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem; cursor: default;">
+          <div class="skel-row">
             <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
             <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
-              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
-              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 60%;"></div>
-              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 40%;"></div>
+              <div class="fd-skel fd-skel-text lg"></div>
+              <div class="fd-skel fd-skel-text md" style="width: 60%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="width: 40%;"></div>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            <div class="skel-actions">
+              <div class="fd-skel skel-btn"></div>
+              <div class="fd-skel skel-btn"></div>
             </div>
           </div>
-          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; margin-bottom: 0.5rem; cursor: default;">
+          <div class="skel-row">
             <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
             <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
-              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
-              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 70%;"></div>
-              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 30%;"></div>
+              <div class="fd-skel fd-skel-text lg"></div>
+              <div class="fd-skel fd-skel-text md" style="width: 70%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="width: 30%;"></div>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            <div class="skel-actions">
+              <div class="fd-skel skel-btn"></div>
+              <div class="fd-skel skel-btn"></div>
             </div>
           </div>
-          <div class="vault-item" style="padding: 0.75rem 1.25rem; gap: 1rem; border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; align-items: center; background-color: #FFFDF9; cursor: default;">
+          <div class="skel-row" style="margin-bottom: 0;">
             <div class="fd-skel fd-skel-circle" style="width: 1.75rem; height: 1.75rem;"></div>
             <div style="flex: 1; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: center; width: 100%;">
-              <div class="fd-skel fd-skel-text lg" style="height: 12px;"></div>
-              <div class="fd-skel fd-skel-text md" style="height: 12px; width: 50%;"></div>
-              <div class="fd-skel fd-skel-text sm" style="height: 12px; width: 50%;"></div>
+              <div class="fd-skel fd-skel-text lg"></div>
+              <div class="fd-skel fd-skel-text md" style="width: 50%;"></div>
+              <div class="fd-skel fd-skel-text sm" style="width: 50%;"></div>
             </div>
-            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
-              <div class="fd-skel fd-skel-block" style="height: 32px; width: 80px;"></div>
+            <div class="skel-actions">
+              <div class="fd-skel skel-btn"></div>
+              <div class="fd-skel skel-btn"></div>
             </div>
           </div>
         </div>
@@ -177,9 +186,9 @@
           const row = document.createElement("div");
           row.className = "vault-item fd-fade-up fd-stagger";
           row.style.setProperty("--fd-delay", `${index * 0.05}s`);
-          row.style.cursor = "default";
-          row.style.padding = "0.75rem 1.25rem";
-          row.style.gap = "1rem";
+          
+          
+          
 
           const formattedDate = FamDocAPI.utils.formatDate(folder.deleted_at);
 
@@ -212,9 +221,9 @@
           const row = document.createElement("div");
           row.className = "vault-item fd-fade-up fd-stagger";
           row.style.setProperty("--fd-delay", `${(deletedFolders.length + index) * 0.05}s`);
-          row.style.cursor = "default";
-          row.style.padding = "0.75rem 1.25rem";
-          row.style.gap = "1rem";
+          
+          
+          
 
           const iconClass = FamDocAPI.utils.getFileIconClass(file.file_type, file.filename);
           const formattedSize = FamDocAPI.utils.formatBytes(file.size_bytes);
@@ -249,7 +258,7 @@
         FamDocAPI.utils.showToast("Failed to load deleted files.", "error");
         listContainer.innerHTML = `
           <div class="empty-state fd-fade-in" style="padding: 2rem 0; color: var(--warning-red);">
-            <i class="fas fa-exclamation-triangle empty-state-icon" style="font-size: 2.5rem; color: var(--warning-red);"></i>
+            <i class="fas fa-exclamation-triangle state-icon error"></i>
             <h4 class="empty-state-title">Failed to load deleted records</h4>
           </div>
         `;

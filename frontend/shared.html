@@ -7,11 +7,23 @@
   <!-- SEO meta -->
   <meta name="description" content="View and download a shared family document vault record securely.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Theme Management -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('famdoc-theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <script src="/js/theme.js" defer></script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   
   <div class="guest-wrapper">
+    <button class="theme-toggle-btn guest-theme-toggle" aria-label="Toggle dark mode">
+      <i class="fas fa-moon"></i>
+    </button>
     <div class="famdoc-card shared-layout fd-page-enter">
       
       <!-- Logo header -->
@@ -25,19 +37,19 @@
 
       <!-- Loading State -->
       <div id="shared-loading" style="padding: 1rem 0;">
-        <div class="shared-file-info" style="border: 1px solid var(--border-paper); background-color: var(--bg-linen); display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
-          <div class="fd-skel fd-skel-circle" style="width: 2.5rem; height: 2.5rem;"></div>
+        <div class="shared-file-info skel-row">
+          <div class="fd-skel fd-skel-circle" style="width: 2.5rem; height: 2.5rem; flex-shrink: 0;"></div>
           <div class="shared-file-details" style="flex: 1; display: flex; flex-direction: column; gap: 0.35rem;">
-            <div class="fd-skel fd-skel-text lg" style="height: 14px; width: 85%;"></div>
-            <div class="fd-skel fd-skel-text md" style="height: 10px; width: 30%;"></div>
+            <div class="fd-skel fd-skel-text lg"></div>
+            <div class="fd-skel fd-skel-text md"></div>
           </div>
         </div>
-        <div class="fd-skel fd-skel-block" style="height: 46px; width: 100%;"></div>
+        <div class="fd-skel skel-block-large"></div>
       </div>
 
       <!-- Error State -->
       <div id="shared-error" style="display: none; text-align: center; padding: 2rem 0;">
-        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--warning-red); margin-bottom: 1.25rem;"></i>
+        <i class="fas fa-exclamation-triangle state-icon error"></i>
         <h3 class="famdoc-card-title" style="margin-bottom: 0.5rem;">Shared Link Invalid</h3>
         <p id="error-desc" style="color: var(--text-ink-muted); margin-bottom: 1.5rem;">This link has expired, reached its maximum download limit, or is incorrect.</p>
         <a href="/index.html" class="btn btn-secondary">Go to FamDoc Homepage</a>
@@ -58,14 +70,14 @@
         </div>
 
         <!-- Password verification form (if protected) -->
-        <div id="password-section" style="display: none; background-color: var(--warning-red-light); border: 1px solid #E2C9C6; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
-          <h4 style="font-family: var(--font-serif); color: #812E28; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <div id="password-section" style="display: none; background-color: var(--warning-red-light); border: 1px solid var(--warning-red-border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+          <h4 style="font-family: var(--font-serif); color: var(--warning-red-dark); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-lock"></i> Password Protected
           </h4>
-          <p style="font-size: 0.85rem; color: #812E28; margin-bottom: 1rem;">This download link requires a verification password provided by the owner.</p>
+          <p style="font-size: 0.85rem; color: var(--warning-red-dark); margin-bottom: 1rem;">This download link requires a verification password provided by the owner.</p>
           
           <div class="form-group" style="margin-bottom: 0;">
-            <input type="password" id="share-passcode" class="form-control" placeholder="Enter password to unlock" style="border-color: #CBA8A4;">
+            <input type="password" id="share-passcode" class="form-control" placeholder="Enter password to unlock" style="border-color: var(--warning-red-border);">
           </div>
         </div>
 
