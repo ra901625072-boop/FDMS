@@ -55,7 +55,7 @@ To save family vault files in Google Drive:
     *   Application type: **Web application**.
     *   Name: `FamilyVault Web client`.
     *   Authorized redirect URIs:
-        `http://localhost:8000/api/storage/google/callback` (Note: If your backend runs on a different port, update this URI accordingly).
+        `http://localhost:8000/api/storage/oauth2callback` (Note: If your backend runs on a different port, update this URI accordingly).
 6.  Click **Create** and copy your **Client ID** and **Client Secret**.
 7.  *Configuration:* The Admin can paste these client credentials directly into the storage setup settings form in the web UI, or they can be pasted globally in the `.env` file as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
