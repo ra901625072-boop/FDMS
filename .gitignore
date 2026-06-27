@@ -27,3 +27,6 @@ backend/scratch/
 # Secrets and Archives
 service-account.json
 *.zip
+node_modules/
+dist/
+.vercel/

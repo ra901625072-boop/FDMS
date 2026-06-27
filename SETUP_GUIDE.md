@@ -1,14 +1,14 @@
 # Setup Guide: Family Document Management System
 
-This guide walks you through the configuration and deployment of the Family Document Management web application. The backend runs on Python FastAPI (SQLite DB) and the frontend is built using single-page vanilla HTML/CSS/JS.
+This guide walks you through the configuration and deployment of the Family Document Management web application. The backend runs on Node.js Fastify (with Prisma ORM and SQLite) and the frontend is built using single-page vanilla HTML/CSS/JS.
 
 ---
 
 ## 1. Prerequisites
 
 Ensure you have the following installed on your system:
-- **Python 3.10+**
-- **pip** (Python package installer)
+- **Node.js 20+**
+- **npm** (Node package manager, included with Node.js)
 - A web browser (Chrome, Firefox, Edge, etc.)
 
 ---
@@ -20,11 +20,11 @@ Open your terminal, navigate to the `backend` folder, and install the required d
 
 ```bash
 cd backend
-pip install -r requirements.txt
+npm install
 ```
 
 ### Step 2: Configure Environment Variables
-Inside the `backend` folder, make a copy of the `.env.example` file and rename it to `.env`:
+Inside the `backend` folder, make a copy of the `.env.example` file (if provided) and rename it to `.env`:
 
 ```bash
 cp .env.example .env
@@ -32,7 +32,15 @@ cp .env.example .env
 
 Open `.env` and review the settings:
 *   Set a strong secret key for `JWT_SECRET` (used for securing user login sessions).
-*   By default, the SQLite database is saved as `family_documents.db` inside the backend directory.
+*   Set `STORAGE_CONFIG_ENCRYPTION_KEY` to a secure random string (used for AES-256-GCM encryption of cloud storage configs).
+*   By default, the SQLite database is saved as `family_documents.db` inside the `backend` directory. The connection URL is defined as `DATABASE_URL="file:./family_documents.db"`.
+
+### Step 3: Initialize Database
+Run the Prisma migrations to create the local SQLite database schema:
+
+```bash
+npx prisma migrate dev --name init
+```
 
 ---
 
@@ -62,23 +70,23 @@ To save family vault files in Google Drive:
 ### Option B: Mega.co.nz
 To save family vault files in Mega:
 1.  All you need is a free Mega account registered on **[Mega.nz](https://mega.nz/)**.
-2.  *Configuration:* The Admin configures Mega directly in the web UI by entering the account email address and password. The system verifies these credentials via the `mega.py` library and auto-creates a dedicated vault directory in the account.
+2.  *Configuration:* The Admin configures Mega directly in the web UI by entering the account email address and password. The system verifies these credentials and auto-creates a dedicated vault directory in the account.
 
 ---
 
 ## 4. Running the Application
 
-To start the FastAPI backend server:
+To start the Fastify backend server (which also serves the frontend):
 
 ```bash
 cd backend
-python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+npm run dev
 ```
+*(For production, compile the code using `npm run build` and run using `npm start`)*
 
 Once the server has started:
 1.  Open your browser and navigate to **[http://localhost:8000](http://localhost:8000)**.
-2.  FastAPI automatically hosts both the REST endpoints and mounts the frontend pages. You will be greeted by the FamilyVault login screen.
-3.  To view the interactive REST API documentation, navigate to **[http://localhost:8000/docs](http://localhost:8000/docs)**.
+2.  Fastify automatically hosts both the REST endpoints and mounts the frontend pages. You will be greeted by the FamilyVault login screen.
 
 ---
 

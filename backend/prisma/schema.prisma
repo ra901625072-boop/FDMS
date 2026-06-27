@@ -1,0 +1,124 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String?
+  role         String   @default("member")
+  createdAt    DateTime @default(now())
+
+  familiesAdministered Family[]
+  memberships          FamilyMember[]
+  uploadedFiles        File[]         @relation("uploader")
+  auditLogs            AuditLog[]
+  sharedLinks          SharedLink[]   @relation("creator")
+}
+
+model Family {
+  id               String    @id
+  name             String
+  adminId          Int
+  secretCodeHash   String
+  secretCodeSha256 String?   @unique
+  maxMembers       Int       @default(10)
+  createdAt        DateTime  @default(now())
+  expiresAt        DateTime?
+  storageProvider  String?
+  storageConfig    String?
+  vaultFolderId    String?
+
+  admin    User           @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  members  FamilyMember[]
+  folders  Folder[]
+  files    File[]
+}
+
+model FamilyMember {
+  id       Int      @id @default(autoincrement())
+  familyId String
+  userId   Int
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Folder {
+  id              Int       @id @default(autoincrement())
+  name            String
+  parentId        Int?
+  familyId        String
+  createdAt       DateTime  @default(now())
+  deletedAt       DateTime?
+  deletionBatchId String?
+
+  family     Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  parent     Folder?  @relation("FolderParent", fields: [parentId], references: [id])
+  subfolders Folder[] @relation("FolderParent")
+  files      File[]
+}
+
+model File {
+  id              Int       @id @default(autoincrement())
+  filename        String
+  fileType        String
+  sizeBytes       Int
+  uploaderId      Int?
+  folderId        Int?
+  familyId        String
+  uploadDate      DateTime  @default(now())
+  deletedAt       DateTime?
+  deletionBatchId String?
+  storageProvider String    @default("local")
+  fileId          String
+  cloudLink       String?
+  pendingSync     Boolean   @default(true)
+  pendingSyncAt   DateTime?
+  syncedTo        String?
+
+  family   Family  @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploader User?   @relation("uploader", fields: [uploaderId], references: [id], onDelete: SetNull)
+  folder   Folder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  SharedLink SharedLink[]
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String
+  timestamp DateTime @default(now())
+  userId    Int?
+  familyId  String?
+  ipAddress String?
+  details   String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model SharedLink {
+  id            String    @id
+  fileId        Int
+  familyId      String
+  passwordHash  String?
+  expiresAt     DateTime?
+  maxDownloads  Int?
+  downloadCount Int       @default(0)
+  createdAt     DateTime  @default(now())
+  createdBy     Int?
+
+  file    File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  creator User? @relation("creator", fields: [createdBy], references: [id], onDelete: SetNull)
+}
+
+model RevokedToken {
+  jti       String   @id
+  revokedAt DateTime @default(now())
+}
